@@ -1,0 +1,7 @@
+services:
+  albion-market:
+    build: .
+    container_name: albion-market-tool
+    ports:
+      - "8069:80"
+    restart: unless-stopped
