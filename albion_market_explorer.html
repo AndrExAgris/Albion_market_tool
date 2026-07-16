@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Albion Market Explorer</title>
+<style>
+  :root {
+    --bg: #0f1115; --surface: #171a21; --surface-2: #1f232c; --border: #2a2f3a;
+    --text: #e8e9ec; --text-secondary: #9aa0ab; --accent: #4f8cff; --success: #3ecf8e; --danger: #e2534a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2rem 1rem 4rem; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.5; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin: 0 0 20px; }
+  .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 8px; }
+  select, button { font-family: inherit; font-size: 14px; }
+  select { width: 100%; padding: 9px 10px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--surface); color: var(--text); }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary);
+    border: 0.5px solid var(--border); border-radius: 8px; padding: 0 10px; background: var(--surface); }
+  .city-row { display: flex; gap: 8px; margin: 8px 0 14px; align-items: center; flex-wrap: wrap; }
+  .city-row select { flex: 1; min-width: 140px; }
+  button.go { padding: 9px 18px; border-radius: 8px; border: 0.5px solid var(--accent); background: var(--accent);
+    color: #fff; cursor: pointer; font-weight: 600; white-space: nowrap; }
+  button.go:disabled { opacity: 0.6; cursor: default; }
+  .status { font-size: 13px; color: var(--text-secondary); margin: 0 0 16px; min-height: 18px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 6px; text-align: left; border-bottom: 0.5px solid var(--border); }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; cursor: pointer; }
+  td.num, th.num { text-align: right; }
+  .profit { color: var(--success); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  .note { font-size: 12px; color: var(--text-secondary); margin-top: 24px; border-top: 0.5px solid var(--border); padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="titulo">Albion Market Explorer</h1>
+  <p class="subtitle" id="subtitulo">Preços em tempo real via Albion Online Data Project — servidor Américas</p>
+
+  <div class="filters">
+    <select id="categoria"><option value="all">...</option></select>
+    <select id="tierMin">
+      <option value="1">T1</option><option value="2" selected>T2</option><option value="3">T3</option><option value="4">T4</option>
+      <option value="5">T5</option><option value="6">T6</option><option value="7">T7</option><option value="8">T8</option>
+    </select>
+    <select id="tierMax">
+      <option value="1">T1</option><option value="2">T2</option><option value="3">T3</option><option value="4">T4</option>
+      <option value="5">T5</option><option value="6">T6</option><option value="7">T7</option><option value="8" selected>T8</option>
+    </select>
+    <label class="checkbox-row"><input type="checkbox" id="encantados" style="width:auto;" /> <span id="lblEnchant">Incluir encantados</span></label>
+    <label class="checkbox-row"><input type="checkbox" id="qualidades" style="width:auto;" /> <span id="lblQuality">Incluir outras qualidades</span></label>
+    <select id="idioma">
+      <option value="en" selected>English</option>
+      <option value="pt">Português</option>
+    </select>
+  </div>
+
+  <div class="city-row">
+    <select id="cidadeCompra">
+      <option value="Caerleon">Caerleon</option><option value="Bridgewatch">Bridgewatch</option><option value="Fort Sterling">Fort Sterling</option>
+      <option value="Lymhurst">Lymhurst</option><option value="Martlock" selected>Martlock</option><option value="Thetford">Thetford</option><option value="Brecilien">Brecilien</option>
+    </select>
+    <select id="cidadeVenda">
+      <option value="AUTO">...</option>
+      <option value="Caerleon">Caerleon</option><option value="Bridgewatch">Bridgewatch</option><option value="Fort Sterling">Fort Sterling</option>
+      <option value="Lymhurst">Lymhurst</option><option value="Martlock">Martlock</option><option value="Thetford">Thetford</option><option value="Brecilien">Brecilien</option>
+    </select>
+    <select id="ordenarPor">
+      <option value="profit">...</option>
+      <option value="pct">...</option>
+    </select>
+    <button class="go" id="goBtn">Buscar</button>
+  </div>
+
+  <p class="status" id="status">Carregando catálogo de itens...</p>
+  <div id="results"></div>
+
+  <p class="note" id="nota">
+    Dados fornecidos voluntariamente por jogadores via Albion Online Data Project — podem estar desatualizados em itens/cidades com pouco movimento.
+    Os valores são brutos, sem descontar a taxa de mercado (4%–8% dependendo do premium).
+    O catálogo completo de itens é carregado uma vez do projeto ao-bin-dumps (pode levar alguns segundos na primeira execução) e fica em cache no navegador.
+  </p>
+</div>
+
+<script>
+const CITIES = ['Caerleon', 'Bridgewatch', 'Fort Sterling', 'Lymhurst', 'Martlock', 'Thetford', 'Brecilien'];
+const SERVER = 'west';
+const ITEMS_URL = 'https://raw.githubusercontent.com/broderickhyman/ao-bin-dumps/master/formatted/items.json';
+const CACHE_KEY = 'albion_market_explorer_catalog_v1';
+
+const EXCLUDE_RE = [
+  /^DEBUG_/, /^GVGSEASONREWARD/, /^HELLGATE_/, /^QUESTITEM/, /^UNIQUE_/, /^LABOURER/, /^HIDEOUT/, /^ROAD_/,
+  /_TOKEN(_|$)/, /PROTOTYPE/, /ARENA_BANNER/, /_BP$/
+];
+
+const CAT_RULES = [
+  [/^ARTEFACT_/, 'artifacts'],
+  [/^(MAIN_|2H_|OFF_)/, 'weapons'],
+  [/^(HEAD_|ARMOR_|SHOES_)/, 'armor'],
+  [/^(BAG|CAPE)/, 'bagcape'],
+  [/^(WOOD|ORE|FIBER|HIDE|ROCK|PLANKS|METALBAR|CLOTH|LEATHER|STONEBLOCK)$/, 'resources'],
+  [/^POTION_/, 'potions'],
+  [/^MEAL_/, 'food'],
+  [/^FARM_(OX|HORSE|DIREWOLF|DIREBOAR|DIREBEAR|SWAMPDRAGON|MAMMOTH|COUGAR|GIANTSTAG|RABBIT|MOABIRD|RAM|GREYWOLF|CHICKEN|GOAT|GOOSE|SHEEP|PIG|COW)/, 'mounts'],
+  [/_SEED$/, 'seeds'],
+  [/^JOURNAL_/, 'journals'],
+  [/^FURNITUREITEM_/, 'furniture'],
+  [/^(FISH_|FISHSAUCE|FISHCHOPS|FISHINGBAIT)/, 'fish']
+];
+
+function categorize(base) {
+  for (const [re, cat] of CAT_RULES) if (re.test(base)) return cat;
+  return 'other';
+}
+
+const CAT_LABELS = {
+  pt: { all: 'Tudo', resources: 'Recursos', potions: 'Poções', food: 'Comida', weapons: 'Armas e ferramentas',
+    armor: 'Armaduras', artifacts: 'Artefatos', bagcape: 'Bolsas e capas', mounts: 'Montarias de fazenda',
+    seeds: 'Sementes', journals: 'Diários de trabalhador', furniture: 'Móveis e troféus', fish: 'Peixes e derivados', other: 'Outros' },
+  en: { all: 'Everything', resources: 'Resources', potions: 'Potions', food: 'Food', weapons: 'Weapons and tools',
+    armor: 'Armor', artifacts: 'Artifacts', bagcape: 'Bags and capes', mounts: 'Farm mounts',
+    seeds: 'Seeds', journals: 'Laborer journals', furniture: 'Furniture and trophies', fish: 'Fish and byproducts', other: 'Other' }
+};
+
+const QUALITY_LABELS = {
+  pt: { 1: 'Normal', 2: 'Bom', 3: 'Excepcional', 4: 'Excelente', 5: 'Obra-prima' },
+  en: { 1: 'Normal', 2: 'Good', 3: 'Outstanding', 4: 'Excellent', 5: 'Masterpiece' }
+};
+
+const I18N = {
+  pt: { title: 'Albion Market Explorer', subtitle: 'Preços em tempo real via Albion Online Data Project — servidor Américas',
+    enchant: 'Incluir encantados', quality: 'Incluir outras qualidades', anyCity: 'Qualquer cidade (melhor preço)', sortProfit: 'Ordenar por lucro (prata)',
+    sortPct: 'Ordenar por lucro (%)', search: 'Buscar', loadingCatalog: 'Carregando catálogo de itens...',
+    catalogReady: 'Catálogo carregado: {n} itens negociáveis. Escolha os filtros e clique em Buscar.',
+    catalogError: 'Não foi possível carregar o catálogo de itens. Verifique sua conexão.',
+    preparing: 'Preparando busca de {n} itens...', searching: 'Buscando preços... lote {a} de {b} ({n} itens)',
+    noneForFilters: 'Nenhum item para esses filtros.', chooseCities: 'Escolha cidades de compra e venda diferentes.',
+    noData: 'Não veio nenhum dado da API — provável problema de conexão ou bloqueio do navegador (veja o console, F12).',
+    noOpp: 'Dados recebidos ({n} registros), mas nenhuma oportunidade de lucro com esses filtros.',
+    found: '{n} oportunidades, comprando em {city} (qualidade normal, sem taxa).',
+    colItem: 'Item', colBuy: 'Compra', colSellAt: 'Vender em', colSell: 'Venda', colProfit: 'Lucro', colProfitPct: 'Lucro %',
+    srcOrder: 'ordem de compra', srcListed: 'preço listado',
+    note: 'Dados fornecidos voluntariamente por jogadores via Albion Online Data Project — podem estar desatualizados em itens/cidades com pouco movimento. Os valores são brutos, sem descontar a taxa de mercado (4%–8% dependendo do premium). O catálogo completo de itens é carregado uma vez do projeto ao-bin-dumps e fica em cache no navegador.' },
+  en: { title: 'Albion Market Explorer', subtitle: 'Live prices via Albion Online Data Project — Americas server',
+    enchant: 'Include enchanted', quality: 'Include other qualities', anyCity: 'Any city (best price)', sortProfit: 'Sort by profit (silver)',
+    sortPct: 'Sort by profit (%)', search: 'Search', loadingCatalog: 'Loading item catalog...',
+    catalogReady: 'Catalog loaded: {n} tradeable items. Choose filters and click Search.',
+    catalogError: 'Could not load the item catalog. Check your connection.',
+    preparing: 'Preparing search for {n} items...', searching: 'Fetching prices... batch {a} of {b} ({n} items)',
+    noneForFilters: 'No items match these filters.', chooseCities: 'Pick different buy and sell cities.',
+    noData: 'No data came back from the API — likely a connection or browser block (check console, F12).',
+    noOpp: 'Data received ({n} records), but no profitable opportunity with these filters.',
+    found: '{n} opportunities, buying in {city} (normal quality, before tax).',
+    colItem: 'Item', colBuy: 'Buy', colSellAt: 'Sell at', colSell: 'Sell price', colProfit: 'Profit', colProfitPct: 'Profit %',
+    srcOrder: 'buy order', srcListed: 'listed price',
+    note: 'Prices are voluntarily shared by players via the Albion Online Data Project — may be stale for low-traffic items/cities. Values are gross, before market tax (4%-8% depending on premium). The full item catalog loads once from the ao-bin-dumps project and is cached in your browser.' }
+};
+
+let CATALOG = [];
+let lang = 'en';
+
+function t(key, vars) {
+  let s = I18N[lang][key] || key;
+  if (vars) for (const k in vars) s = s.replace('{' + k + '}', vars[k]);
+  return s;
+}
+
+async function loadCatalog() {
+  const statusEl = document.getElementById('status');
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      CATALOG = JSON.parse(cached);
+      return;
+    }
+  } catch (e) {}
+  const res = await fetch(ITEMS_URL);
+  const raw = await res.json();
+  const catalog = [];
+  raw.forEach(function (entry) {
+    const un = entry.UniqueName || '';
+    const m = un.match(/^T([1-8])_(.+?)(@([1-4]))?$/);
+    if (!m) return;
+    const base = m[2];
+    for (const re of EXCLUDE_RE) if (re.test(base)) return;
+    const names = entry.LocalizedNames || {};
+    catalog.push({
+      id: un, tier: parseInt(m[1]), ench: m[4] ? parseInt(m[4]) : 0,
+      cat: categorize(base), en: names['EN-US'] || un, pt: names['PT-BR'] || names['EN-US'] || un
+    });
+  });
+  CATALOG = catalog;
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(catalog)); } catch (e) {}
+}
+
+function populateCategorySelect() {
+  const sel = document.getElementById('categoria');
+  const cats = {};
+  CATALOG.forEach(function (it) { cats[it.cat] = (cats[it.cat] || 0) + 1; });
+  const order = ['resources','potions','food','weapons','armor','artifacts','bagcape','mounts','seeds','journals','furniture','fish','other'];
+  let html = '<option value="all">' + CAT_LABELS[lang].all + ' (' + CATALOG.length + ')</option>';
+  order.forEach(function (c) {
+    if (cats[c]) html += '<option value="' + c + '">' + CAT_LABELS[lang][c] + ' (' + cats[c] + ')</option>';
+  });
+  sel.innerHTML = html;
+}
+
+function applyLanguage() {
+  document.getElementById('titulo').textContent = t('title');
+  document.getElementById('subtitulo').textContent = t('subtitle');
+  document.getElementById('lblEnchant').textContent = t('enchant');
+  document.getElementById('lblQuality').textContent = t('quality');
+  document.getElementById('goBtn').textContent = t('search');
+  document.getElementById('nota').textContent = t('note');
+  document.getElementById('cidadeVenda').options[0].textContent = t('anyCity');
+  document.getElementById('ordenarPor').options[0].textContent = t('sortProfit');
+  document.getElementById('ordenarPor').options[1].textContent = t('sortPct');
+  populateCategorySelect();
+}
+
+document.getElementById('idioma').addEventListener('change', function () {
+  lang = this.value;
+  applyLanguage();
+});
+
+function buildItemList(categoria, tierMin, tierMax, includeEnchanted) {
+  return CATALOG.filter(function (it) {
+    if (categoria !== 'all' && it.cat !== categoria) return false;
+    if (it.tier < tierMin || it.tier > tierMax) return false;
+    if (!includeEnchanted && it.ench > 0) return false;
+    return true;
+  });
+}
+
+async function buscarPrecosEmLotes(ids, statusEl, qualidades) {
+  const tamanhoLote = 80;
+  const lotes = [];
+  for (let i = 0; i < ids.length; i += tamanhoLote) lotes.push(ids.slice(i, i + tamanhoLote));
+  const resultados = [];
+  const concorrencia = 6;
+  let indice = 0, concluidos = 0;
+  async function worker() {
+    while (indice < lotes.length) {
+      const meu = indice++;
+      const lote = lotes[meu];
+      const url = 'https://' + SERVER + '.albion-online-data.com/api/v2/stats/prices/' +
+        lote.join(',') + '.json?locations=' + encodeURIComponent(CITIES.join(',')) + '&qualities=' + qualidades.join(',');
+      try {
+        const res = await fetch(url);
+        if (res.ok) { const data = await res.json(); resultados.push.apply(resultados, data); }
+      } catch (e) {}
+      concluidos++;
+      statusEl.textContent = t('searching', { a: concluidos, b: lotes.length, n: ids.length });
+    }
+  }
+  const workers = [];
+  for (let i = 0; i < Math.min(concorrencia, lotes.length); i++) workers.push(worker());
+  await Promise.all(workers);
+  return resultados;
+}
+
+function itemIconUrl(id, quality) {
+  return 'https://render.albiononline.com/v1/item/' + encodeURIComponent(id) + '.png?size=64&quality=' + (quality || 1);
+}
+
+function formatDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function tabelaHtml(headers, rows) {
+  let html = '<div class="table-wrap"><table><tr>';
+  headers.forEach(function (h) { html += '<th class="' + (h.num ? 'num' : '') + '">' + h.label + '</th>'; });
+  html += '</tr>';
+  rows.forEach(function (r) { html += '<tr>' + r + '</tr>'; });
+  html += '</table></div>';
+  return html;
+}
+
+let sortMode = 'profit';
+
+document.getElementById('goBtn').addEventListener('click', async function () {
+  const categoria = document.getElementById('categoria').value;
+  const tierMin = parseInt(document.getElementById('tierMin').value);
+  const tierMax = parseInt(document.getElementById('tierMax').value);
+  const includeEnchanted = document.getElementById('encantados').checked;
+  const includeQualities = document.getElementById('qualidades').checked;
+  const qualidades = includeQualities ? [1, 2, 3, 4, 5] : [1];
+  const cidadeCompra = document.getElementById('cidadeCompra').value;
+  const cidadeVenda = document.getElementById('cidadeVenda').value;
+  sortMode = document.getElementById('ordenarPor').value;
+  const statusEl = document.getElementById('status');
+  const resultsEl = document.getElementById('results');
+  const btn = document.getElementById('goBtn');
+
+  if (cidadeVenda !== 'AUTO' && cidadeVenda === cidadeCompra) { statusEl.textContent = t('chooseCities'); return; }
+
+  const itens = buildItemList(categoria, tierMin, tierMax, includeEnchanted);
+  if (itens.length === 0) { statusEl.textContent = t('noneForFilters'); return; }
+
+  btn.disabled = true;
+  resultsEl.innerHTML = '';
+  statusEl.textContent = t('preparing', { n: itens.length });
+
+  try {
+    const ids = itens.map(function (it) { return it.id; });
+    const data = await buscarPrecosEmLotes(ids, statusEl, qualidades);
+    const porItem = {};
+    data.forEach(function (row) {
+      if (!porItem[row.item_id]) porItem[row.item_id] = {};
+      if (!porItem[row.item_id][row.city]) porItem[row.item_id][row.city] = {};
+      porItem[row.item_id][row.city][row.quality] = row;
+    });
+
+    function precoVendaEm(destino) {
+      if (!destino) return null;
+      if (destino.buy_price_max > 0) return { preco: destino.buy_price_max };
+      return null;
+    }
+
+    const oportunidades = [];
+    itens.forEach(function (it) {
+      const porCidade = porItem[it.id];
+      if (!porCidade) return;
+      qualidades.forEach(function (q) {
+        const origem = porCidade[cidadeCompra] && porCidade[cidadeCompra][q];
+        if (!origem) return;
+        const custoCompra = origem.sell_price_min;
+        if (!custoCompra || custoCompra <= 0) return;
+
+        let melhor = null;
+        if (cidadeVenda === 'AUTO') {
+          CITIES.forEach(function (outra) {
+            if (outra === cidadeCompra) return;
+            const resultado = precoVendaEm(porCidade[outra] && porCidade[outra][q]);
+            if (resultado && (!melhor || resultado.preco > melhor.preco)) melhor = { cidade: outra, preco: resultado.preco };
+          });
+        } else {
+          const resultado = precoVendaEm(porCidade[cidadeVenda] && porCidade[cidadeVenda][q]);
+          if (resultado) melhor = { cidade: cidadeVenda, preco: resultado.preco };
+        }
+
+        if (melhor && melhor.preco > custoCompra) {
+          const lucro = melhor.preco - custoCompra;
+          const nomeBase = lang === 'pt' ? it.pt : it.en;
+          const qualLabel = QUALITY_LABELS[lang][q];
+          oportunidades.push({
+            id: it.id, quality: q, label: q > 1 ? nomeBase + ' (' + qualLabel + ')' : nomeBase,
+            buyCost: custoCompra, destCity: melhor.cidade, sellPrice: melhor.preco, profit: lucro, pct: lucro / custoCompra * 100
+          });
+        }
+      });
+    });
+
+    oportunidades.sort(function (a, b) { return sortMode === 'pct' ? b.pct - a.pct : b.profit - a.profit; });
+    const top = oportunidades.slice(0, 50);
+
+    if (data.length === 0) {
+      statusEl.textContent = t('noData');
+    } else if (top.length === 0) {
+      statusEl.textContent = t('noOpp', { n: data.length });
+    } else {
+      statusEl.textContent = t('found', { n: top.length, city: cidadeCompra });
+      const rows = top.map(function (o) {
+        return '<td><img src="' + itemIconUrl(o.id, o.quality) + '" width="28" height="28" loading="lazy" ' +
+          'style="vertical-align:middle; margin-right:8px; border-radius:4px; background:var(--surface-2);" ' +
+          'onerror="this.style.display=\'none\'" alt="" />' + o.label + '</td>' +
+          '<td class="num">' + o.buyCost.toLocaleString() + '</td>' +
+          '<td>' + o.destCity + '</td>' +
+          '<td class="num">' + o.sellPrice.toLocaleString() + '</td>' +
+          '<td class="num profit">+' + o.profit.toLocaleString() + '</td>' +
+          '<td class="num profit">' + o.pct.toFixed(1) + '%</td>';
+      });
+      resultsEl.innerHTML = tabelaHtml([
+        { label: t('colItem') }, { label: t('colBuy'), num: true }, { label: t('colSellAt') },
+        { label: t('colSell'), num: true }, { label: t('colProfit'), num: true }, { label: t('colProfitPct'), num: true }
+      ], rows);
+    }
+  } catch (e) {
+    statusEl.textContent = 'Erro: ' + e.message;
+  }
+  btn.disabled = false;
+});
+
+(async function init() {
+  applyLanguage();
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = t('loadingCatalog');
+  try {
+    await loadCatalog();
+    populateCategorySelect();
+    statusEl.textContent = t('catalogReady', { n: CATALOG.length });
+  } catch (e) {
+    statusEl.textContent = t('catalogError');
+  }
+})();
+</script>
+</body>
+</html>
