@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,111 +10,157 @@
     --text: #e8e9ec; --text-secondary: #9aa0ab; --accent: #4f8cff; --success: #3ecf8e; --danger: #e2534a;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 2rem 1rem 4rem; background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.5; }
-  .wrap { max-width: 960px; margin: 0 auto; }
-  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
-  .subtitle { color: var(--text-secondary); font-size: 14px; margin: 0 0 20px; }
-  .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 8px; }
-  select, button { font-family: inherit; font-size: 14px; }
-  select { width: 100%; padding: 9px 10px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--surface); color: var(--text); }
-  .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary);
-    border: 0.5px solid var(--border); border-radius: 8px; padding: 0 10px; background: var(--surface); }
-  .city-row { display: flex; gap: 8px; margin: 8px 0 14px; align-items: center; flex-wrap: wrap; }
-  .city-row select { flex: 1; min-width: 140px; }
-  button.go { padding: 9px 18px; border-radius: 8px; border: 0.5px solid var(--accent); background: var(--accent);
-    color: #fff; cursor: pointer; font-weight: 600; white-space: nowrap; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.5; font-size: 15px; }
+  select, button, input { font-family: inherit; font-size: 14px; }
+  select, input[type=text] { width: 100%; padding: 9px 10px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--surface); color: var(--text); }
+
+  /* Top bar */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 12px 20px; border-bottom: 0.5px solid var(--border); background: var(--surface); flex-wrap: wrap; }
+  .topbar-left { display: flex; align-items: center; gap: 24px; }
+  .logo { font-weight: 700; font-size: 17px; white-space: nowrap; }
+  .tabs { display: flex; gap: 4px; }
+  .tab-btn { padding: 8px 16px; border-radius: 8px; border: none; background: transparent; color: var(--text-secondary);
+    cursor: pointer; font-weight: 500; font-size: 14px; }
+  .tab-btn.active { background: var(--surface-2); color: var(--text); }
+  .topbar-right { display: flex; gap: 8px; }
+  .topbar-right select { width: auto; min-width: 110px; }
+
+  /* Layout */
+  .layout { display: grid; grid-template-columns: 270px 1fr; gap: 0; align-items: start; }
+  .sidebar { padding: 20px; border-right: 0.5px solid var(--border); position: sticky; top: 0; }
+  .main { padding: 20px; min-width: 0; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.02em; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 4px 0; }
+  .checkbox-row input { width: auto; }
+  .city-checks { border: 0.5px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--surface); }
+  .divider { border-top: 0.5px solid var(--border); margin: 4px 0 8px; }
+  button.go { width: 100%; padding: 11px; border-radius: 8px; border: 0.5px solid var(--accent); background: var(--accent);
+    color: #fff; cursor: pointer; font-weight: 600; margin-top: 6px; }
   button.go:disabled { opacity: 0.6; cursor: default; }
+
   .status { font-size: 13px; color: var(--text-secondary); margin: 0 0 16px; min-height: 18px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 8px 6px; text-align: left; border-bottom: 0.5px solid var(--border); }
-  th { color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px 8px; text-align: left; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
   td.num, th.num { text-align: right; }
+  td.icon-cell { width: 48px; }
+  td.icon-cell img { width: 36px; height: 36px; border-radius: 6px; background: var(--surface-2); display: block; }
   .profit { color: var(--success); font-weight: 600; }
   .table-wrap { overflow-x: auto; }
   .note { font-size: 12px; color: var(--text-secondary); margin-top: 24px; border-top: 0.5px solid var(--border); padding-top: 16px; }
+
+  /* Item search */
+  .search-box { position: relative; max-width: 480px; margin-bottom: 20px; }
+  .search-results-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface);
+    border: 0.5px solid var(--border); border-radius: 8px; margin-top: 4px; max-height: 320px; overflow-y: auto; z-index: 10; }
+  .search-result-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; }
+  .search-result-item:hover { background: var(--surface-2); }
+  .search-result-item img { width: 28px; height: 28px; border-radius: 4px; background: var(--surface-2); }
+  .selected-item-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .selected-item-header img { width: 48px; height: 48px; border-radius: 8px; background: var(--surface-2); }
+  .selected-item-header h2 { font-size: 18px; margin: 0; }
+
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; border-right: none; border-bottom: 0.5px solid var(--border); }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1 id="titulo">Albion Market Explorer</h1>
-  <p class="subtitle" id="subtitulo">Preços em tempo real via Albion Online Data Project — servidor Américas</p>
 
-  <div class="filters">
-    <select id="categoria"><option value="all">...</option></select>
-    <select id="tierMin">
-      <option value="1">T1</option><option value="2" selected>T2</option><option value="3">T3</option><option value="4">T4</option>
-      <option value="5">T5</option><option value="6">T6</option><option value="7">T7</option><option value="8">T8</option>
-    </select>
-    <select id="tierMax">
-      <option value="1">T1</option><option value="2">T2</option><option value="3">T3</option><option value="4">T4</option>
-      <option value="5">T5</option><option value="6">T6</option><option value="7">T7</option><option value="8" selected>T8</option>
-    </select>
-    <label class="checkbox-row"><input type="checkbox" id="encantados" style="width:auto;" /> <span id="lblEnchant">Incluir encantados</span></label>
-    <label class="checkbox-row"><input type="checkbox" id="qualidades" style="width:auto;" /> <span id="lblQuality">Incluir outras qualidades</span></label>
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">Albion Market Explorer</div>
+    <div class="tabs">
+      <button class="tab-btn active" id="tabExplorer">Market Explorer</button>
+      <button class="tab-btn" id="tabSearch">Item Search</button>
+    </div>
+  </div>
+  <div class="topbar-right">
     <select id="idioma">
       <option value="en" selected>English</option>
       <option value="pt">Português</option>
     </select>
+    <select id="regiao">
+      <option value="west" selected>Americas</option>
+      <option value="europe">Europe</option>
+      <option value="east">Asia</option>
+    </select>
+  </div>
+</div>
+
+<!-- ===== Market Explorer view ===== -->
+<div class="layout" id="viewExplorer">
+  <div class="sidebar">
+    <div class="field">
+      <label id="lblCategory">Category</label>
+      <select id="categoria"><option value="all">...</option></select>
+    </div>
+    <div class="field">
+      <label id="lblTier">Tier</label>
+      <div style="display:flex; gap:6px;">
+        <select id="tierMin">
+          <option value="1">T1</option><option value="2" selected>T2</option><option value="3">T3</option><option value="4">T4</option>
+          <option value="5">T5</option><option value="6">T6</option><option value="7">T7</option><option value="8">T8</option>
+        </select>
+        <select id="tierMax">
+          <option value="1">T1</option><option value="2">T2</option><option value="3">T3</option><option value="4">T4</option>
+          <option value="5">T5</option><option value="6">T6</option><option value="7">T7</option><option value="8" selected>T8</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="checkbox-row"><input type="checkbox" id="encantados" /> <span id="lblEnchant">Include enchanted</span></label>
+      <label class="checkbox-row"><input type="checkbox" id="qualidades" /> <span id="lblQuality">Include other qualities</span></label>
+      <label class="checkbox-row"><input type="checkbox" id="usarNats" /> <span id="lblNats">Use live NATS feed</span> <span id="natsIndicator" style="color:var(--text-secondary);"></span></label>
+    </div>
+    <div class="divider"></div>
+    <div class="field">
+      <label id="lblBuyCity">Buy city</label>
+      <select id="cidadeCompra">
+        <option value="Caerleon">Caerleon</option><option value="Bridgewatch">Bridgewatch</option><option value="Fort Sterling">Fort Sterling</option>
+        <option value="Lymhurst">Lymhurst</option><option value="Martlock" selected>Martlock</option><option value="Thetford">Thetford</option><option value="Brecilien">Brecilien</option>
+      </select>
+    </div>
+    <div class="field">
+      <label id="lblSellCities">Sell cities</label>
+      <div class="city-checks" id="sellCitiesBox">
+        <label class="checkbox-row"><input type="checkbox" id="sellAll" checked /> <strong id="lblSelectAll">Select all</strong></label>
+        <div class="divider"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label id="lblSort">Sort by</label>
+      <select id="ordenarPor">
+        <option value="profit">...</option>
+        <option value="pct">...</option>
+      </select>
+    </div>
+    <button class="go" id="goBtn">Search</button>
   </div>
 
-  <div class="city-row">
-    <select id="cidadeCompra">
-      <option value="Caerleon">Caerleon</option><option value="Bridgewatch">Bridgewatch</option><option value="Fort Sterling">Fort Sterling</option>
-      <option value="Lymhurst">Lymhurst</option><option value="Martlock" selected>Martlock</option><option value="Thetford">Thetford</option><option value="Brecilien">Brecilien</option>
-    </select>
-    <select id="cidadeVenda">
-      <option value="AUTO">...</option>
-      <option value="Caerleon">Caerleon</option><option value="Bridgewatch">Bridgewatch</option><option value="Fort Sterling">Fort Sterling</option>
-      <option value="Lymhurst">Lymhurst</option><option value="Martlock">Martlock</option><option value="Thetford">Thetford</option><option value="Brecilien">Brecilien</option>
-    </select>
-    <select id="ordenarPor">
-      <option value="profit">...</option>
-      <option value="pct">...</option>
-    </select>
-    <button class="go" id="goBtn">Buscar</button>
+  <div class="main">
+    <p class="status" id="status">Connecting to backend...</p>
+    <div id="results"></div>
+    <p class="note" id="nota"></p>
   </div>
+</div>
 
-  <p class="status" id="status">Carregando catálogo de itens...</p>
-  <div id="results"></div>
-
-  <p class="note" id="nota">
-    Dados fornecidos voluntariamente por jogadores via Albion Online Data Project — podem estar desatualizados em itens/cidades com pouco movimento.
-    Os valores são brutos, sem descontar a taxa de mercado (4%–8% dependendo do premium).
-    O catálogo completo de itens é carregado uma vez do projeto ao-bin-dumps (pode levar alguns segundos na primeira execução) e fica em cache no navegador.
-  </p>
+<!-- ===== Item Search view ===== -->
+<div class="main" id="viewSearch" style="display:none; max-width: 900px; margin: 0 auto;">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search for an item...">
+    <div class="search-results-dropdown" id="searchDropdown" style="display:none;"></div>
+  </div>
+  <label class="checkbox-row" style="margin-bottom:16px;"><input type="checkbox" id="searchQualities" /> <span id="lblSearchQuality">Include other qualities</span></label>
+  <div id="searchResultArea"></div>
 </div>
 
 <script>
 const CITIES = ['Caerleon', 'Bridgewatch', 'Fort Sterling', 'Lymhurst', 'Martlock', 'Thetford', 'Brecilien'];
-const SERVER = 'west';
-const ITEMS_URL = 'https://raw.githubusercontent.com/broderickhyman/ao-bin-dumps/master/formatted/items.json';
-const CACHE_KEY = 'albion_market_explorer_catalog_v1';
-
-const EXCLUDE_RE = [
-  /^DEBUG_/, /^GVGSEASONREWARD/, /^HELLGATE_/, /^QUESTITEM/, /^UNIQUE_/, /^LABOURER/, /^HIDEOUT/, /^ROAD_/,
-  /_TOKEN(_|$)/, /PROTOTYPE/, /ARENA_BANNER/, /_BP$/
-];
-
-const CAT_RULES = [
-  [/^ARTEFACT_/, 'artifacts'],
-  [/^(MAIN_|2H_|OFF_)/, 'weapons'],
-  [/^(HEAD_|ARMOR_|SHOES_)/, 'armor'],
-  [/^(BAG|CAPE)/, 'bagcape'],
-  [/^(WOOD|ORE|FIBER|HIDE|ROCK|PLANKS|METALBAR|CLOTH|LEATHER|STONEBLOCK)$/, 'resources'],
-  [/^POTION_/, 'potions'],
-  [/^MEAL_/, 'food'],
-  [/^FARM_(OX|HORSE|DIREWOLF|DIREBOAR|DIREBEAR|SWAMPDRAGON|MAMMOTH|COUGAR|GIANTSTAG|RABBIT|MOABIRD|RAM|GREYWOLF|CHICKEN|GOAT|GOOSE|SHEEP|PIG|COW)/, 'mounts'],
-  [/_SEED$/, 'seeds'],
-  [/^JOURNAL_/, 'journals'],
-  [/^FURNITUREITEM_/, 'furniture'],
-  [/^(FISH_|FISHSAUCE|FISHCHOPS|FISHINGBAIT)/, 'fish']
-];
-
-function categorize(base) {
-  for (const [re, cat] of CAT_RULES) if (re.test(base)) return cat;
-  return 'other';
-}
 
 const CAT_LABELS = {
   pt: { all: 'Tudo', resources: 'Recursos', potions: 'Poções', food: 'Comida', weapons: 'Armas e ferramentas',
@@ -131,36 +177,56 @@ const QUALITY_LABELS = {
 };
 
 const I18N = {
-  pt: { title: 'Albion Market Explorer', subtitle: 'Preços em tempo real via Albion Online Data Project — servidor Américas',
-    enchant: 'Incluir encantados', quality: 'Incluir outras qualidades', anyCity: 'Qualquer cidade (melhor preço)', sortProfit: 'Ordenar por lucro (prata)',
-    sortPct: 'Ordenar por lucro (%)', search: 'Buscar', loadingCatalog: 'Carregando catálogo de itens...',
-    catalogReady: 'Catálogo carregado: {n} itens negociáveis. Escolha os filtros e clique em Buscar.',
-    catalogError: 'Não foi possível carregar o catálogo de itens. Verifique sua conexão.',
-    preparing: 'Preparando busca de {n} itens...', searching: 'Buscando preços... lote {a} de {b} ({n} itens)',
-    noneForFilters: 'Nenhum item para esses filtros.', chooseCities: 'Escolha cidades de compra e venda diferentes.',
-    noData: 'Não veio nenhum dado da API — provável problema de conexão ou bloqueio do navegador (veja o console, F12).',
+  pt: {
+    marketExplorer: 'Explorador de mercado', itemSearch: 'Buscar item',
+    category: 'Categoria', tier: 'Tier', enchant: 'Incluir encantados', quality: 'Incluir outras qualidades',
+    natsLabel: 'Usar feed ao vivo NATS', natsConnected: 'conectado, {n}', natsDisconnected: 'desconectado',
+    buyCity: 'Cidade de compra', sellCities: 'Cidades de venda', selectAll: 'Selecionar todas',
+    sortProfit: 'Lucro (prata)', sortPct: 'Lucro (%)', sort: 'Ordenar por', search: 'Buscar',
+    connecting: 'Conectando ao backend...', backendError: 'Não foi possível conectar ao backend. Verifique se o container está rodando.',
+    catalogLoading: 'Backend carregando catálogo de itens, tentando de novo em alguns segundos...',
+    ready: 'Pronto: {n} itens negociáveis no catálogo. Escolha os filtros e clique em Buscar.',
+    searching: 'Buscando...', noneForFilters: 'Nenhum item para esses filtros.', chooseCities: 'Selecione ao menos uma cidade de venda.',
+    noData: 'O backend não recebeu dados da API da AODP — tente de novo em instantes.',
     noOpp: 'Dados recebidos ({n} registros), mas nenhuma oportunidade de lucro com esses filtros.',
-    found: '{n} oportunidades, comprando em {city} (qualidade normal, sem taxa).',
+    noOppLive: 'Feed NATS ao vivo: {n} ordens no livro agora. Ainda não há oportunidade com esses filtros — o feed só acumula dados a partir do momento em que o backend conectou. Tente desmarcar "usar feed ao vivo" para a busca via API tradicional, mais completa.',
+    found: '{n} oportunidades, comprando em {city} (sem taxa de mercado).',
     colItem: 'Item', colBuy: 'Compra', colSellAt: 'Vender em', colSell: 'Venda', colProfit: 'Lucro', colProfitPct: 'Lucro %',
-    srcOrder: 'ordem de compra', srcListed: 'preço listado',
-    note: 'Dados fornecidos voluntariamente por jogadores via Albion Online Data Project — podem estar desatualizados em itens/cidades com pouco movimento. Os valores são brutos, sem descontar a taxa de mercado (4%–8% dependendo do premium). O catálogo completo de itens é carregado uma vez do projeto ao-bin-dumps e fica em cache no navegador.' },
-  en: { title: 'Albion Market Explorer', subtitle: 'Live prices via Albion Online Data Project — Americas server',
-    enchant: 'Include enchanted', quality: 'Include other qualities', anyCity: 'Any city (best price)', sortProfit: 'Sort by profit (silver)',
-    sortPct: 'Sort by profit (%)', search: 'Search', loadingCatalog: 'Loading item catalog...',
-    catalogReady: 'Catalog loaded: {n} tradeable items. Choose filters and click Search.',
-    catalogError: 'Could not load the item catalog. Check your connection.',
-    preparing: 'Preparing search for {n} items...', searching: 'Fetching prices... batch {a} of {b} ({n} items)',
-    noneForFilters: 'No items match these filters.', chooseCities: 'Pick different buy and sell cities.',
-    noData: 'No data came back from the API — likely a connection or browser block (check console, F12).',
+    searchPlaceholder: 'Buscar um item...', searchQualityLabel: 'Incluir outras qualidades',
+    searchPrompt: 'Digite ao menos 2 letras para buscar um item.', searchNoResults: 'Nenhum item encontrado.',
+    priceColCity: 'Cidade', priceColBuy: 'Comprar por (menor ordem de venda)', priceColSell: 'Vender por (maior ordem de compra)', priceColQuality: 'Qualidade',
+    priceNoData: 'Sem dados de preço para este item nas cidades monitoradas.',
+    note: 'Dados fornecidos voluntariamente por jogadores via Albion Online Data Project — podem estar desatualizados em itens/cidades com pouco movimento. Os valores são brutos, sem descontar a taxa de mercado (4%–8% dependendo do premium).'
+  },
+  en: {
+    marketExplorer: 'Market Explorer', itemSearch: 'Item Search',
+    category: 'Category', tier: 'Tier', enchant: 'Include enchanted', quality: 'Include other qualities',
+    natsLabel: 'Use live NATS feed', natsConnected: 'connected, {n}', natsDisconnected: 'disconnected',
+    buyCity: 'Buy city', sellCities: 'Sell cities', selectAll: 'Select all',
+    sortProfit: 'Profit (silver)', sortPct: 'Profit (%)', sort: 'Sort by', search: 'Search',
+    connecting: 'Connecting to backend...', backendError: 'Could not reach the backend. Check that the container is running.',
+    catalogLoading: 'Backend is loading the item catalog, retrying in a few seconds...',
+    ready: 'Ready: {n} tradeable items in catalog. Choose filters and click Search.',
+    searching: 'Searching...', noneForFilters: 'No items match these filters.', chooseCities: 'Select at least one sell city.',
+    noData: 'The backend got no data back from the AODP API — try again shortly.',
     noOpp: 'Data received ({n} records), but no profitable opportunity with these filters.',
-    found: '{n} opportunities, buying in {city} (normal quality, before tax).',
+    noOppLive: 'Live NATS feed: {n} orders in the book right now. No opportunity yet with these filters — the feed only accumulates data from the moment the backend connected. Try unchecking "live NATS feed" for the regular API search, which has fuller coverage.',
+    found: '{n} opportunities, buying in {city} (before market tax).',
     colItem: 'Item', colBuy: 'Buy', colSellAt: 'Sell at', colSell: 'Sell price', colProfit: 'Profit', colProfitPct: 'Profit %',
-    srcOrder: 'buy order', srcListed: 'listed price',
-    note: 'Prices are voluntarily shared by players via the Albion Online Data Project — may be stale for low-traffic items/cities. Values are gross, before market tax (4%-8% depending on premium). The full item catalog loads once from the ao-bin-dumps project and is cached in your browser.' }
+    searchPlaceholder: 'Search for an item...', searchQualityLabel: 'Include other qualities',
+    searchPrompt: 'Type at least 2 letters to search for an item.', searchNoResults: 'No items found.',
+    priceColCity: 'City', priceColBuy: 'Buy for (lowest sell order)', priceColSell: 'Sell for (highest buy order)', priceColQuality: 'Quality',
+    priceNoData: 'No price data for this item in the tracked cities.',
+    note: 'Prices are voluntarily shared by players via the Albion Online Data Project — may be stale for low-traffic items/cities. Values are gross, before market tax (4%-8% depending on premium).'
+  }
 };
 
-let CATALOG = [];
 let lang = 'en';
+let region = 'west';
+let lastOpportunities = [];
+let lastCategoryCounts = null;
+let searchDebounce = null;
+let selectedItem = null;
 
 function t(key, vars) {
   let s = I18N[lang][key] || key;
@@ -168,106 +234,129 @@ function t(key, vars) {
   return s;
 }
 
-async function loadCatalog() {
-  const statusEl = document.getElementById('status');
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      CATALOG = JSON.parse(cached);
-      return;
-    }
-  } catch (e) {}
-  const res = await fetch(ITEMS_URL);
-  const raw = await res.json();
-  const catalog = [];
-  raw.forEach(function (entry) {
-    const un = entry.UniqueName || '';
-    const m = un.match(/^T([1-8])_(.+?)(@([1-4]))?$/);
-    if (!m) return;
-    const base = m[2];
-    for (const re of EXCLUDE_RE) if (re.test(base)) return;
-    const names = entry.LocalizedNames || {};
-    catalog.push({
-      id: un, tier: parseInt(m[1]), ench: m[4] ? parseInt(m[4]) : 0,
-      cat: categorize(base), en: names['EN-US'] || un, pt: names['PT-BR'] || names['EN-US'] || un
-    });
-  });
-  CATALOG = catalog;
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(catalog)); } catch (e) {}
-}
-
-function populateCategorySelect() {
-  const sel = document.getElementById('categoria');
-  const cats = {};
-  CATALOG.forEach(function (it) { cats[it.cat] = (cats[it.cat] || 0) + 1; });
-  const order = ['resources','potions','food','weapons','armor','artifacts','bagcape','mounts','seeds','journals','furniture','fish','other'];
-  let html = '<option value="all">' + CAT_LABELS[lang].all + ' (' + CATALOG.length + ')</option>';
-  order.forEach(function (c) {
-    if (cats[c]) html += '<option value="' + c + '">' + CAT_LABELS[lang][c] + ' (' + cats[c] + ')</option>';
-  });
-  sel.innerHTML = html;
-}
-
-function applyLanguage() {
-  document.getElementById('titulo').textContent = t('title');
-  document.getElementById('subtitulo').textContent = t('subtitle');
-  document.getElementById('lblEnchant').textContent = t('enchant');
-  document.getElementById('lblQuality').textContent = t('quality');
-  document.getElementById('goBtn').textContent = t('search');
-  document.getElementById('nota').textContent = t('note');
-  document.getElementById('cidadeVenda').options[0].textContent = t('anyCity');
-  document.getElementById('ordenarPor').options[0].textContent = t('sortProfit');
-  document.getElementById('ordenarPor').options[1].textContent = t('sortPct');
-  populateCategorySelect();
-}
-
-document.getElementById('idioma').addEventListener('change', function () {
-  lang = this.value;
-  applyLanguage();
-});
-
-function buildItemList(categoria, tierMin, tierMax, includeEnchanted) {
-  return CATALOG.filter(function (it) {
-    if (categoria !== 'all' && it.cat !== categoria) return false;
-    if (it.tier < tierMin || it.tier > tierMax) return false;
-    if (!includeEnchanted && it.ench > 0) return false;
-    return true;
-  });
-}
-
-async function buscarPrecosEmLotes(ids, statusEl, qualidades) {
-  const tamanhoLote = 80;
-  const lotes = [];
-  for (let i = 0; i < ids.length; i += tamanhoLote) lotes.push(ids.slice(i, i + tamanhoLote));
-  const resultados = [];
-  const concorrencia = 6;
-  let indice = 0, concluidos = 0;
-  async function worker() {
-    while (indice < lotes.length) {
-      const meu = indice++;
-      const lote = lotes[meu];
-      const url = 'https://' + SERVER + '.albion-online-data.com/api/v2/stats/prices/' +
-        lote.join(',') + '.json?locations=' + encodeURIComponent(CITIES.join(',')) + '&qualities=' + qualidades.join(',');
-      try {
-        const res = await fetch(url);
-        if (res.ok) { const data = await res.json(); resultados.push.apply(resultados, data); }
-      } catch (e) {}
-      concluidos++;
-      statusEl.textContent = t('searching', { a: concluidos, b: lotes.length, n: ids.length });
-    }
-  }
-  const workers = [];
-  for (let i = 0; i < Math.min(concorrencia, lotes.length); i++) workers.push(worker());
-  await Promise.all(workers);
-  return resultados;
-}
-
 function itemIconUrl(id, quality) {
   return 'https://render.albiononline.com/v1/item/' + encodeURIComponent(id) + '.png?size=64&quality=' + (quality || 1);
 }
 
-function formatDate(d) {
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+function buildSellCityCheckboxes() {
+  const box = document.getElementById('sellCitiesBox');
+  const buyCity = document.getElementById('cidadeCompra').value;
+  box.innerHTML = '<label class="checkbox-row"><input type="checkbox" id="sellAll" checked /> <strong id="lblSelectAll">' + t('selectAll') + '</strong></label><div class="divider"></div>';
+  CITIES.forEach(function (city) {
+    if (city === buyCity) return;
+    const id = 'sell_' + city.replace(/\s+/g, '');
+    const row = document.createElement('label');
+    row.className = 'checkbox-row';
+    row.innerHTML = '<input type="checkbox" id="' + id + '" data-city="' + city + '" checked /> ' + city;
+    box.appendChild(row);
+  });
+  document.getElementById('sellAll').addEventListener('change', function () {
+    const checked = this.checked;
+    box.querySelectorAll('input[data-city]').forEach(function (cb) { cb.checked = checked; });
+  });
+  box.querySelectorAll('input[data-city]').forEach(function (cb) {
+    cb.addEventListener('change', function () {
+      const all = Array.from(box.querySelectorAll('input[data-city]')).every(function (c) { return c.checked; });
+      document.getElementById('sellAll').checked = all;
+    });
+  });
+}
+
+document.getElementById('cidadeCompra').addEventListener('change', buildSellCityCheckboxes);
+
+function getSelectedSellCities() {
+  const box = document.getElementById('sellCitiesBox');
+  return Array.from(box.querySelectorAll('input[data-city]:checked')).map(function (cb) { return cb.dataset.city; });
+}
+
+function applyLanguage() {
+  document.getElementById('tabExplorer').textContent = t('marketExplorer');
+  document.getElementById('tabSearch').textContent = t('itemSearch');
+  document.getElementById('lblCategory').textContent = t('category');
+  document.getElementById('lblTier').textContent = t('tier');
+  document.getElementById('lblEnchant').textContent = t('enchant');
+  document.getElementById('lblQuality').textContent = t('quality');
+  document.getElementById('lblNats').textContent = t('natsLabel');
+  document.getElementById('lblBuyCity').textContent = t('buyCity');
+  document.getElementById('lblSellCities').textContent = t('sellCities');
+  document.getElementById('lblSort').textContent = t('sort');
+  document.getElementById('goBtn').textContent = t('search');
+  document.getElementById('nota').textContent = t('note');
+  document.getElementById('searchInput').placeholder = t('searchPlaceholder');
+  document.getElementById('lblSearchQuality').textContent = t('searchQualityLabel');
+  document.getElementById('ordenarPor').options[0].textContent = t('sortProfit');
+  document.getElementById('ordenarPor').options[1].textContent = t('sortPct');
+  buildSellCityCheckboxes();
+  if (lastOpportunities.length) renderTable(lastOpportunities); else populateCategorySelect(lastCategoryCounts);
+}
+
+function populateCategorySelect(counts) {
+  if (!counts) return;
+  lastCategoryCounts = counts;
+  const sel = document.getElementById('categoria');
+  const current = sel.value || 'all';
+  const order = ['resources','potions','food','weapons','armor','artifacts','bagcape','mounts','seeds','journals','furniture','fish','other'];
+  let html = '<option value="all">' + CAT_LABELS[lang].all + ' (' + counts.all + ')</option>';
+  order.forEach(function (c) {
+    if (counts[c]) html += '<option value="' + c + '">' + CAT_LABELS[lang][c] + ' (' + counts[c] + ')</option>';
+  });
+  sel.innerHTML = html;
+  sel.value = current;
+}
+
+document.getElementById('idioma').addEventListener('change', function () { lang = this.value; applyLanguage(); });
+document.getElementById('regiao').addEventListener('change', function () {
+  region = this.value;
+  connectToBackend();
+  pollNatsStatus();
+});
+
+document.getElementById('tabExplorer').addEventListener('click', function () {
+  document.getElementById('tabExplorer').classList.add('active');
+  document.getElementById('tabSearch').classList.remove('active');
+  document.getElementById('viewExplorer').style.display = 'grid';
+  document.getElementById('viewSearch').style.display = 'none';
+});
+document.getElementById('tabSearch').addEventListener('click', function () {
+  document.getElementById('tabSearch').classList.add('active');
+  document.getElementById('tabExplorer').classList.remove('active');
+  document.getElementById('viewSearch').style.display = 'block';
+  document.getElementById('viewExplorer').style.display = 'none';
+});
+
+async function pollNatsStatus() {
+  const el = document.getElementById('natsIndicator');
+  try {
+    const res = await fetch('/api/nats-status');
+    const data = await res.json();
+    const r = data.regions && data.regions[region];
+    if (!r) { el.textContent = ''; return; }
+    el.textContent = '(' + (r.connected ? t('natsConnected', { n: r.orderCount.toLocaleString() }) : t('natsDisconnected')) + ')';
+  } catch (e) {
+    el.textContent = '';
+  }
+}
+
+async function connectToBackend() {
+  const statusEl = document.getElementById('status');
+  for (let attempt = 0; attempt < 30; attempt++) {
+    try {
+      const res = await fetch('/api/categories');
+      if (res.status === 503) {
+        statusEl.textContent = t('catalogLoading');
+        await new Promise(function (r) { setTimeout(r, 3000); });
+        continue;
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      populateCategorySelect(data.counts);
+      statusEl.textContent = t('ready', { n: data.counts.all });
+      return;
+    } catch (e) {
+      statusEl.textContent = t('backendError');
+      await new Promise(function (r) { setTimeout(r, 3000); });
+    }
+  }
 }
 
 function tabelaHtml(headers, rows) {
@@ -279,122 +368,180 @@ function tabelaHtml(headers, rows) {
   return html;
 }
 
-let sortMode = 'profit';
+function renderTable(opps) {
+  const resultsEl = document.getElementById('results');
+  const rows = opps.map(function (o) {
+    const nameBase = lang === 'pt' ? o.pt : o.en;
+    const qualLabel = QUALITY_LABELS[lang][o.quality];
+    const label = o.quality > 1 ? nameBase + ' (' + qualLabel + ')' : nameBase;
+    return '<td class="icon-cell"><img src="' + itemIconUrl(o.id, o.quality) + '" loading="lazy" onerror="this.style.display=\'none\'" alt="" /></td>' +
+      '<td>' + label + '</td>' +
+      '<td class="num">' + o.buyCost.toLocaleString() + '</td>' +
+      '<td>' + o.destCity + '</td>' +
+      '<td class="num">' + o.sellPrice.toLocaleString() + '</td>' +
+      '<td class="num profit">+' + o.profit.toLocaleString() + '</td>' +
+      '<td class="num profit">' + o.pct.toFixed(1) + '%</td>';
+  });
+  resultsEl.innerHTML = tabelaHtml([
+    { label: '' }, { label: t('colItem') }, { label: t('colBuy'), num: true }, { label: t('colSellAt') },
+    { label: t('colSell'), num: true }, { label: t('colProfit'), num: true }, { label: t('colProfitPct'), num: true }
+  ], rows);
+}
 
 document.getElementById('goBtn').addEventListener('click', async function () {
   const categoria = document.getElementById('categoria').value;
-  const tierMin = parseInt(document.getElementById('tierMin').value);
-  const tierMax = parseInt(document.getElementById('tierMax').value);
+  const tierMin = document.getElementById('tierMin').value;
+  const tierMax = document.getElementById('tierMax').value;
   const includeEnchanted = document.getElementById('encantados').checked;
   const includeQualities = document.getElementById('qualidades').checked;
-  const qualidades = includeQualities ? [1, 2, 3, 4, 5] : [1];
   const cidadeCompra = document.getElementById('cidadeCompra').value;
-  const cidadeVenda = document.getElementById('cidadeVenda').value;
-  sortMode = document.getElementById('ordenarPor').value;
+  const sellCities = getSelectedSellCities();
+  const sortMode = document.getElementById('ordenarPor').value;
   const statusEl = document.getElementById('status');
   const resultsEl = document.getElementById('results');
   const btn = document.getElementById('goBtn');
 
-  if (cidadeVenda !== 'AUTO' && cidadeVenda === cidadeCompra) { statusEl.textContent = t('chooseCities'); return; }
-
-  const itens = buildItemList(categoria, tierMin, tierMax, includeEnchanted);
-  if (itens.length === 0) { statusEl.textContent = t('noneForFilters'); return; }
+  if (sellCities.length === 0) { statusEl.textContent = t('chooseCities'); return; }
 
   btn.disabled = true;
   resultsEl.innerHTML = '';
-  statusEl.textContent = t('preparing', { n: itens.length });
+  lastOpportunities = [];
+  statusEl.textContent = t('searching');
+
+  const sellAllChecked = document.getElementById('sellAll').checked;
+  const params = new URLSearchParams({
+    category: categoria, tierMin: tierMin, tierMax: tierMax,
+    enchanted: includeEnchanted, qualities: includeQualities,
+    buyCity: cidadeCompra, sellCities: sellAllChecked ? 'ALL' : sellCities.join(','),
+    region: region
+  });
+  const usingLive = document.getElementById('usarNats').checked;
+  const endpoint = usingLive ? '/api/opportunities-live' : '/api/opportunities';
 
   try {
-    const ids = itens.map(function (it) { return it.id; });
-    const data = await buscarPrecosEmLotes(ids, statusEl, qualidades);
-    const porItem = {};
-    data.forEach(function (row) {
-      if (!porItem[row.item_id]) porItem[row.item_id] = {};
-      if (!porItem[row.item_id][row.city]) porItem[row.item_id][row.city] = {};
-      porItem[row.item_id][row.city][row.quality] = row;
-    });
+    const res = await fetch(endpoint + '?' + params.toString());
+    const data = await res.json();
 
-    function precoVendaEm(destino) {
-      if (!destino) return null;
-      if (destino.buy_price_max > 0) return { preco: destino.buy_price_max };
-      return null;
-    }
-
-    const oportunidades = [];
-    itens.forEach(function (it) {
-      const porCidade = porItem[it.id];
-      if (!porCidade) return;
-      qualidades.forEach(function (q) {
-        const origem = porCidade[cidadeCompra] && porCidade[cidadeCompra][q];
-        if (!origem) return;
-        const custoCompra = origem.sell_price_min;
-        if (!custoCompra || custoCompra <= 0) return;
-
-        let melhor = null;
-        if (cidadeVenda === 'AUTO') {
-          CITIES.forEach(function (outra) {
-            if (outra === cidadeCompra) return;
-            const resultado = precoVendaEm(porCidade[outra] && porCidade[outra][q]);
-            if (resultado && (!melhor || resultado.preco > melhor.preco)) melhor = { cidade: outra, preco: resultado.preco };
-          });
-        } else {
-          const resultado = precoVendaEm(porCidade[cidadeVenda] && porCidade[cidadeVenda][q]);
-          if (resultado) melhor = { cidade: cidadeVenda, preco: resultado.preco };
-        }
-
-        if (melhor && melhor.preco > custoCompra) {
-          const lucro = melhor.preco - custoCompra;
-          const nomeBase = lang === 'pt' ? it.pt : it.en;
-          const qualLabel = QUALITY_LABELS[lang][q];
-          oportunidades.push({
-            id: it.id, quality: q, label: q > 1 ? nomeBase + ' (' + qualLabel + ')' : nomeBase,
-            buyCost: custoCompra, destCity: melhor.cidade, sellPrice: melhor.preco, profit: lucro, pct: lucro / custoCompra * 100
-          });
-        }
-      });
-    });
-
-    oportunidades.sort(function (a, b) { return sortMode === 'pct' ? b.pct - a.pct : b.profit - a.profit; });
-    const top = oportunidades.slice(0, 50);
-
-    if (data.length === 0) {
+    if (data.status === 'no_data') {
       statusEl.textContent = t('noData');
-    } else if (top.length === 0) {
-      statusEl.textContent = t('noOpp', { n: data.length });
+    } else if (data.status === 'no_items') {
+      statusEl.textContent = t('noneForFilters');
+    } else if (data.status === 'no_opportunities') {
+      if (usingLive) {
+        const orderCount = (data.natsStatus && data.natsStatus.orderCount) || 0;
+        statusEl.textContent = t('noOppLive', { n: orderCount });
+      } else {
+        statusEl.textContent = t('noOpp', { n: data.dataCount || 0 });
+      }
+    } else if (data.status === 'ok') {
+      let opps = data.opportunities;
+      opps.sort(function (a, b) { return sortMode === 'pct' ? b.pct - a.pct : b.profit - a.profit; });
+      opps = opps.slice(0, 80);
+      lastOpportunities = opps;
+      statusEl.textContent = t('found', { n: opps.length, city: cidadeCompra });
+      renderTable(opps);
     } else {
-      statusEl.textContent = t('found', { n: top.length, city: cidadeCompra });
-      const rows = top.map(function (o) {
-        return '<td><img src="' + itemIconUrl(o.id, o.quality) + '" width="28" height="28" loading="lazy" ' +
-          'style="vertical-align:middle; margin-right:8px; border-radius:4px; background:var(--surface-2);" ' +
-          'onerror="this.style.display=\'none\'" alt="" />' + o.label + '</td>' +
-          '<td class="num">' + o.buyCost.toLocaleString() + '</td>' +
-          '<td>' + o.destCity + '</td>' +
-          '<td class="num">' + o.sellPrice.toLocaleString() + '</td>' +
-          '<td class="num profit">+' + o.profit.toLocaleString() + '</td>' +
-          '<td class="num profit">' + o.pct.toFixed(1) + '%</td>';
-      });
-      resultsEl.innerHTML = tabelaHtml([
-        { label: t('colItem') }, { label: t('colBuy'), num: true }, { label: t('colSellAt') },
-        { label: t('colSell'), num: true }, { label: t('colProfit'), num: true }, { label: t('colProfitPct'), num: true }
-      ], rows);
+      statusEl.textContent = 'Error: ' + data.status;
     }
   } catch (e) {
-    statusEl.textContent = 'Erro: ' + e.message;
+    statusEl.textContent = t('backendError');
   }
   btn.disabled = false;
 });
 
+// ===== Item Search tab =====
+const searchInput = document.getElementById('searchInput');
+const searchDropdown = document.getElementById('searchDropdown');
+
+searchInput.addEventListener('input', function () {
+  clearTimeout(searchDebounce);
+  const q = this.value.trim();
+  if (q.length < 2) { searchDropdown.style.display = 'none'; return; }
+  searchDebounce = setTimeout(async function () {
+    try {
+      const res = await fetch('/api/search-items?q=' + encodeURIComponent(q));
+      const data = await res.json();
+      renderSearchDropdown(data.results || []);
+    } catch (e) { /* ignore */ }
+  }, 300);
+});
+
+function renderSearchDropdown(results) {
+  if (results.length === 0) {
+    searchDropdown.innerHTML = '<div class="search-result-item">' + t('searchNoResults') + '</div>';
+    searchDropdown.style.display = 'block';
+    return;
+  }
+  searchDropdown.innerHTML = results.map(function (it) {
+    const name = lang === 'pt' ? it.pt : it.en;
+    return '<div class="search-result-item" data-id="' + it.id + '">' +
+      '<img src="' + itemIconUrl(it.id, 1) + '" onerror="this.style.display=\'none\'" alt="" />' +
+      '<span>T' + it.tier + (it.ench ? '.' + it.ench : '') + ' ' + name + '</span></div>';
+  }).join('');
+  searchDropdown.style.display = 'block';
+  searchDropdown.querySelectorAll('.search-result-item[data-id]').forEach(function (row) {
+    row.addEventListener('click', function () { selectItem(this.dataset.id, results); });
+  });
+}
+
+async function selectItem(id, results) {
+  selectedItem = results.find(function (r) { return r.id === id; }) || null;
+  searchDropdown.style.display = 'none';
+  searchInput.value = '';
+  await runItemPriceSearch();
+}
+
+document.getElementById('searchQualities').addEventListener('change', runItemPriceSearch);
+
+async function runItemPriceSearch() {
+  if (!selectedItem) return;
+  const area = document.getElementById('searchResultArea');
+  const includeQualities = document.getElementById('searchQualities').checked;
+  const name = lang === 'pt' ? selectedItem.pt : selectedItem.en;
+  area.innerHTML = '<div class="selected-item-header"><img src="' + itemIconUrl(selectedItem.id, 1) + '" onerror="this.style.display=\'none\'" alt="" />' +
+    '<h2>T' + selectedItem.tier + (selectedItem.ench ? '.' + selectedItem.ench : '') + ' ' + name + '</h2></div>' +
+    '<p class="status">' + t('searching') + '</p>';
+
+  const params = new URLSearchParams({ id: selectedItem.id, region: region, qualities: includeQualities });
+  try {
+    const res = await fetch('/api/item-prices?' + params.toString());
+    const data = await res.json();
+    if (data.status !== 'ok' || !data.prices.length) {
+      area.innerHTML = '<div class="selected-item-header"><img src="' + itemIconUrl(selectedItem.id, 1) + '" onerror="this.style.display=\'none\'" alt="" />' +
+        '<h2>T' + selectedItem.tier + (selectedItem.ench ? '.' + selectedItem.ench : '') + ' ' + name + '</h2></div>' +
+        '<p class="status">' + t('priceNoData') + '</p>';
+      return;
+    }
+    const rows = data.prices
+      .filter(function (p) { return p.sell_price_min > 0 || p.buy_price_max > 0; })
+      .sort(function (a, b) { return a.city.localeCompare(b.city) || a.quality - b.quality; })
+      .map(function (p) {
+        const qualLabel = QUALITY_LABELS[lang][p.quality] || p.quality;
+        return '<td>' + p.city + '</td>' +
+          '<td>' + qualLabel + '</td>' +
+          '<td class="num">' + (p.sell_price_min ? p.sell_price_min.toLocaleString() : '—') + '</td>' +
+          '<td class="num">' + (p.buy_price_max ? p.buy_price_max.toLocaleString() : '—') + '</td>';
+      });
+    const table = tabelaHtml([
+      { label: t('priceColCity') }, { label: t('priceColQuality') },
+      { label: t('priceColBuy'), num: true }, { label: t('priceColSell'), num: true }
+    ], rows);
+    area.innerHTML = '<div class="selected-item-header"><img src="' + itemIconUrl(selectedItem.id, 1) + '" onerror="this.style.display=\'none\'" alt="" />' +
+      '<h2>T' + selectedItem.tier + (selectedItem.ench ? '.' + selectedItem.ench : '') + ' ' + name + '</h2></div>' + table;
+  } catch (e) {
+    area.innerHTML = '<p class="status">' + t('backendError') + '</p>';
+  }
+}
+
+document.addEventListener('click', function (e) {
+  if (!searchDropdown.contains(e.target) && e.target !== searchInput) searchDropdown.style.display = 'none';
+});
+
 (async function init() {
   applyLanguage();
-  const statusEl = document.getElementById('status');
-  statusEl.textContent = t('loadingCatalog');
-  try {
-    await loadCatalog();
-    populateCategorySelect();
-    statusEl.textContent = t('catalogReady', { n: CATALOG.length });
-  } catch (e) {
-    statusEl.textContent = t('catalogError');
-  }
+  await connectToBackend();
+  pollNatsStatus();
+  setInterval(pollNatsStatus, 10000);
 })();
 </script>
 </body>

@@ -1,7 +1,23 @@
 services:
-  albion-market:
+  backend:
+    build: ./backend
+    container_name: albion-market-backend
+    restart: unless-stopped
+    environment:
+      - REGION=west
+      - PORT=4000
+      - DATA_DIR=/data
+    volumes:
+      - catalog-cache:/data
+
+  web:
     build: .
     container_name: albion-market-tool
+    depends_on:
+      - backend
     ports:
       - "8069:80"
     restart: unless-stopped
+
+volumes:
+  catalog-cache:
