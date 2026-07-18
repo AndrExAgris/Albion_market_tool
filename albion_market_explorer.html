@@ -31,11 +31,12 @@
   .layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; align-items: start; }
   .sidebar { padding: 14px 16px; border-right: 0.5px solid var(--border); position: sticky; top: 0; height: calc(100vh - 57px); overflow-y: hidden; display: flex; flex-direction: column; }
   .main { padding: 20px; min-width: 0; }
-  .field { margin-bottom: 8px; }
+  .field { margin-bottom: 8px; flex-shrink: 0; }
+  .field.grow { flex: 1; min-height: 70px; display: flex; flex-direction: column; margin-bottom: 8px; }
   .field label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.02em; }
   .checkbox-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); padding: 2px 0; }
   .checkbox-row input { width: auto; }
-  .check-box-group { border: 0.5px solid var(--border); border-radius: 8px; padding: 5px 10px; background: var(--surface); max-height: 130px; overflow-y: auto; }
+  .check-box-group { border: 0.5px solid var(--border); border-radius: 8px; padding: 5px 10px; background: var(--surface); overflow-y: auto; flex: 1; min-height: 0; }
   .divider { border-top: 0.5px solid var(--border); margin: 3px 0 5px; }
   button.go { width: 100%; padding: 10px; border-radius: 8px; border: 0.5px solid var(--accent); background: var(--accent);
     color: #fff; cursor: pointer; font-weight: 600; margin-top: auto; font-size: 14px; }
@@ -83,6 +84,7 @@
     <div class="tabs">
       <button class="tab-btn active" id="tabExplorer">Market Explorer</button>
       <button class="tab-btn" id="tabSearch">Item Search</button>
+      <button class="tab-btn" id="tabCraft">Crafting Guide</button>
     </div>
   </div>
   <div class="topbar-right">
@@ -101,7 +103,7 @@
 <!-- ===== Market Explorer view ===== -->
 <div class="layout" id="viewExplorer">
   <div class="sidebar">
-    <div class="field">
+    <div class="field grow">
       <label id="lblCategory">Category</label>
       <div class="check-box-group" id="categoryBox">
         <label class="checkbox-row"><input type="checkbox" id="catAll" checked /> <strong id="lblSelectAllCat">Select all</strong></label>
@@ -111,7 +113,7 @@
     <div class="field">
       <label class="checkbox-row"><input type="checkbox" id="encantados" /> <span id="lblEnchant">Include enchanted</span></label>
       <label class="checkbox-row"><input type="checkbox" id="qualidades" /> <span id="lblQuality">Include other qualities</span></label>
-      <label class="checkbox-row"><input type="checkbox" id="usarNats" /> <span id="lblNats">Use live NATS feed</span> <span id="natsIndicator" style="color:var(--text-secondary);"></span></label>
+      <span id="natsIndicator" style="color:var(--text-secondary); font-size:12px; display:block; padding:4px 0;"></span>
     </div>
     <div class="divider"></div>
     <div class="field">
@@ -121,7 +123,7 @@
         <option value="Lymhurst">Lymhurst</option><option value="Martlock" selected>Martlock</option><option value="Thetford">Thetford</option><option value="Brecilien">Brecilien</option>
       </select>
     </div>
-    <div class="field">
+    <div class="field grow">
       <label id="lblSellCities">Sell cities</label>
       <div class="check-box-group" id="sellCitiesBox">
         <label class="checkbox-row"><input type="checkbox" id="sellAll" checked /> <strong id="lblSelectAll">Select all</strong></label>
@@ -155,8 +157,18 @@
   <div id="searchResultArea"></div>
 </div>
 
+<!-- ===== Crafting Guide view ===== -->
+<div class="main" id="viewCraft" style="display:none; max-width: 900px; margin: 0 auto;">
+  <p id="craftIntro" style="color:var(--text-secondary); font-size:14px; margin-bottom:20px;"></p>
+  <div class="section-title" id="craftCityTitle">City bonuses</div>
+  <div id="craftCityArea"></div>
+  <div class="section-title" id="craftRecipesTitle">T4 recipes</div>
+  <div id="craftRecipesArea"></div>
+</div>
+
 <script>
 const CITIES = ['Caerleon', 'Bridgewatch', 'Fort Sterling', 'Lymhurst', 'Martlock', 'Thetford', 'Brecilien'];
+const SELL_ONLY_LOCATIONS = ['Black Market'];
 const CATEGORY_ORDER = ['resources','food','weapons','armor','artifacts','bagcape','journals','furniture','other'];
 const PERIODS = [1, 7, 30];
 
@@ -176,7 +188,11 @@ const QUALITY_LABELS = {
 
 const I18N = {
   pt: {
-    marketExplorer: 'Explorador de mercado', itemSearch: 'Buscar item',
+    marketExplorer: 'Explorador de mercado', itemSearch: 'Buscar item', craftingGuide: 'Guia de crafting',
+    craftIntro: 'Receitas de T4 — subindo ou descendo de tier, a quantidade de recurso continua a mesma, só o tier do recurso muda junto (por exemplo, uma T6 Espada usa a mesma quantidade de Barra de Metal T6 que a T4 usa de Barra de Metal T4). Cidade = onde você ganha o bônus de +15% de especialidade para craftar aquele item.',
+    craftCityTitle: 'Bônus por cidade', craftRecipesTitle: 'Receitas T4',
+    craftColCity: 'Cidade', craftColRefine: 'Bônus de refino', craftColGear: 'Bônus de craft de equipamento',
+    craftColItem: 'Item', craftColResources: 'Recursos (T4)',
     category: 'Categoria', enchant: 'Incluir encantados', quality: 'Incluir outras qualidades',
     natsLabel: 'Usar feed ao vivo NATS', natsConnected: 'conectado, {n}', natsDisconnected: 'desconectado',
     buyCity: 'Cidade de compra', sellCities: 'Cidades de venda', selectAll: 'Selecionar todas',
@@ -188,7 +204,6 @@ const I18N = {
     chooseCats: 'Selecione ao menos uma categoria.',
     noData: 'O backend não recebeu dados da API da AODP — tente de novo em instantes.',
     noOpp: 'Dados recebidos ({n} registros), mas nenhuma oportunidade de lucro com esses filtros.',
-    noOppLive: 'Feed NATS ao vivo: {n} ordens no livro agora. Ainda não há oportunidade com esses filtros — o feed só acumula dados a partir do momento em que o backend conectou. Tente desmarcar "usar feed ao vivo" para a busca via API tradicional, mais completa.',
     found: '{n} oportunidades, comprando em {city} (sem taxa de mercado).',
     colItem: 'Item', colBuy: 'Compra', colSellAt: 'Vender em', colSell: 'Venda', colProfit: 'Lucro', colProfitPct: 'Lucro %',
     colVolume: 'Vol. 24h', colAvgPrice: 'Preço médio 24h', noVolume: 'sem dados', updatedAt: 'atualizado em {date}',
@@ -202,7 +217,11 @@ const I18N = {
     note: 'Dados fornecidos voluntariamente por jogadores via Albion Online Data Project — podem estar desatualizados em itens/cidades com pouco movimento. Os valores são brutos, sem descontar a taxa de mercado (4%–8% dependendo do premium).'
   },
   en: {
-    marketExplorer: 'Market Explorer', itemSearch: 'Item Search',
+    marketExplorer: 'Market Explorer', itemSearch: 'Item Search', craftingGuide: 'Crafting Guide',
+    craftIntro: 'T4 recipes shown — going up or down a tier keeps the same resource quantity, only the resource tier changes to match (e.g. a T6 Sword uses the same amount of T6 Metal Bar that a T4 one uses of T4 Metal Bar). City = where you get the +15% specialty bonus for crafting that item.',
+    craftCityTitle: 'City bonuses', craftRecipesTitle: 'T4 recipes',
+    craftColCity: 'City', craftColRefine: 'Refining bonus', craftColGear: 'Gear crafting bonus',
+    craftColItem: 'Item', craftColResources: 'Resources (T4)',
     category: 'Category', enchant: 'Include enchanted', quality: 'Include other qualities',
     natsLabel: 'Use live NATS feed', natsConnected: 'connected, {n}', natsDisconnected: 'disconnected',
     buyCity: 'Buy city', sellCities: 'Sell cities', selectAll: 'Select all',
@@ -214,7 +233,6 @@ const I18N = {
     chooseCats: 'Select at least one category.',
     noData: 'The backend got no data back from the AODP API — try again shortly.',
     noOpp: 'Data received ({n} records), but no profitable opportunity with these filters.',
-    noOppLive: 'Live NATS feed: {n} orders in the book right now. No opportunity yet with these filters — the feed only accumulates data from the moment the backend connected. Try unchecking "live NATS feed" for the regular API search, which has fuller coverage.',
     found: '{n} opportunities, buying in {city} (before market tax).',
     colItem: 'Item', colBuy: 'Buy', colSellAt: 'Sell at', colSell: 'Sell price', colProfit: 'Profit', colProfitPct: 'Profit %',
     colVolume: '24h Vol.', colAvgPrice: '24h Avg Price', noVolume: 'no data', updatedAt: 'updated {date}',
@@ -228,6 +246,97 @@ const I18N = {
     note: 'Prices are voluntarily shared by players via the Albion Online Data Project — may be stale for low-traffic items/cities. Values are gross, before market tax (4%-8% depending on premium).'
   }
 };
+
+const RESOURCE_NAME = {
+  pt: { METALBAR: 'Barra de metal', PLANKS: 'Tábuas', CLOTH: 'Tecido', LEATHER: 'Couro' },
+  en: { METALBAR: 'Metal Bar', PLANKS: 'Planks', CLOTH: 'Cloth', LEATHER: 'Leather' }
+};
+
+// Real crafting requirements pulled directly from the game's own items.xml
+// (ao-data/ao-bin-dumps). Quantities are identical at every tier from T3 to
+// T8 — only the tier of the resource itself changes to match (confirmed by
+// checking T3 through T8 for several items). City = the royal city that
+// gives the +15% crafting specialty bonus for that item, per craftingcategory.
+const CRAFT_RECIPES = [
+  { id: 'T4_MAIN_SWORD', en: 'Sword', pt: 'Espada', res: [['METALBAR', 16], ['LEATHER', 8]], city: 'Lymhurst' },
+  { id: 'T4_MAIN_AXE', en: 'Axe', pt: 'Machado', res: [['PLANKS', 8], ['METALBAR', 16]], city: 'Martlock' },
+  { id: 'T4_MAIN_MACE', en: 'Mace', pt: 'Maça', res: [['METALBAR', 16], ['CLOTH', 8]], city: 'Thetford' },
+  { id: 'T4_MAIN_HAMMER', en: 'Hammer', pt: 'Martelo', res: [['METALBAR', 24]], city: 'Fort Sterling' },
+  { id: 'T4_MAIN_DAGGER', en: 'Dagger', pt: 'Adaga', res: [['METALBAR', 12], ['LEATHER', 12]], city: 'Bridgewatch' },
+  { id: 'T4_MAIN_SPEAR', en: 'Spear', pt: 'Lança', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Fort Sterling' },
+  { id: 'T4_MAIN_ARCANESTAFF', en: 'Arcane Staff', pt: 'Cajado Arcano', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Lymhurst' },
+  { id: 'T4_MAIN_CURSEDSTAFF', en: 'Cursed Staff', pt: 'Cajado Amaldiçoado', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Bridgewatch' },
+  { id: 'T4_MAIN_FIRESTAFF', en: 'Fire Staff', pt: 'Cajado de Fogo', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Thetford' },
+  { id: 'T4_MAIN_FROSTSTAFF', en: 'Frost Staff', pt: 'Cajado de Gelo', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Martlock' },
+  { id: 'T4_MAIN_HOLYSTAFF', en: 'Holy Staff', pt: 'Cajado Sagrado', res: [['PLANKS', 16], ['CLOTH', 8]], city: 'Fort Sterling' },
+  { id: 'T4_MAIN_NATURESTAFF', en: 'Nature Staff', pt: 'Cajado da Natureza', res: [['PLANKS', 16], ['CLOTH', 8]], city: 'Thetford' },
+  { id: 'T4_2H_BOW', en: 'Bow', pt: 'Arco', res: [['PLANKS', 32]], city: 'Lymhurst' },
+  { id: 'T4_2H_CROSSBOW', en: 'Crossbow', pt: 'Besta', res: [['PLANKS', 20], ['METALBAR', 12]], city: 'Bridgewatch' },
+  { id: 'T4_2H_HAMMER', en: 'Great Hammer', pt: 'Martelo Grande', res: [['METALBAR', 20], ['CLOTH', 12]], city: 'Fort Sterling' },
+  { id: 'T4_2H_AXE', en: 'Battleaxe', pt: 'Machado de Batalha', res: [['PLANKS', 12], ['METALBAR', 20]], city: 'Martlock' },
+  { id: 'T4_2H_CLAYMORE', en: 'Claymore', pt: 'Claymore', res: [['METALBAR', 20], ['LEATHER', 12]], city: 'Lymhurst' },
+  { id: 'T4_2H_SPEAR', en: 'Great Spear', pt: 'Lança Grande', res: [['PLANKS', 20], ['METALBAR', 12]], city: 'Fort Sterling' },
+  { id: 'T4_2H_QUARTERSTAFF', en: 'Quarterstaff', pt: 'Bo', res: [['METALBAR', 12], ['LEATHER', 20]], city: 'Martlock' },
+  { id: 'T4_2H_FIRESTAFF', en: 'Great Fire Staff', pt: 'Cajado de Fogo Grande', res: [['PLANKS', 20], ['METALBAR', 12]], city: 'Thetford' },
+  { id: 'T4_2H_HOLYSTAFF', en: 'Great Holy Staff', pt: 'Cajado Sagrado Grande', res: [['PLANKS', 20], ['CLOTH', 12]], city: 'Fort Sterling' },
+  { id: 'T4_2H_NATURESTAFF', en: 'Great Nature Staff', pt: 'Cajado da Natureza Grande', res: [['PLANKS', 20], ['CLOTH', 12]], city: 'Thetford' },
+  { id: 'T4_2H_FROSTSTAFF', en: 'Great Frost Staff', pt: 'Cajado de Gelo Grande', res: [['PLANKS', 20], ['METALBAR', 12]], city: 'Martlock' },
+  { id: 'T4_OFF_SHIELD', en: 'Shield', pt: 'Escudo', res: [['PLANKS', 4], ['METALBAR', 4]], city: 'Martlock' },
+  { id: 'T4_OFF_BOOK', en: 'Tome', pt: 'Tomo', res: [['CLOTH', 4], ['LEATHER', 4]], city: 'Martlock' },
+  { id: 'T4_OFF_TORCH', en: 'Torch', pt: 'Tocha', res: [['PLANKS', 4], ['CLOTH', 4]], city: 'Martlock' },
+  { id: 'T4_HEAD_PLATE_SET1', en: 'Plate Helmet', pt: 'Elmo de Placas', res: [['METALBAR', 8]], city: 'Fort Sterling' },
+  { id: 'T4_ARMOR_PLATE_SET1', en: 'Plate Armor', pt: 'Armadura de Placas', res: [['METALBAR', 16]], city: 'Bridgewatch' },
+  { id: 'T4_SHOES_PLATE_SET1', en: 'Plate Boots', pt: 'Botas de Placas', res: [['METALBAR', 8]], city: 'Martlock' },
+  { id: 'T4_HEAD_LEATHER_SET1', en: 'Leather Hood', pt: 'Capuz de Couro', res: [['LEATHER', 8]], city: 'Lymhurst' },
+  { id: 'T4_ARMOR_LEATHER_SET1', en: 'Leather Armor', pt: 'Armadura de Couro', res: [['LEATHER', 16]], city: 'Thetford' },
+  { id: 'T4_SHOES_LEATHER_SET1', en: 'Leather Shoes', pt: 'Sapatos de Couro', res: [['LEATHER', 8]], city: 'Lymhurst' },
+  { id: 'T4_HEAD_CLOTH_SET1', en: 'Cloth Hood', pt: 'Capuz de Tecido', res: [['CLOTH', 8]], city: 'Thetford' },
+  { id: 'T4_ARMOR_CLOTH_SET1', en: 'Cloth Robe', pt: 'Vestimenta de Tecido', res: [['CLOTH', 16]], city: 'Fort Sterling' },
+  { id: 'T4_SHOES_CLOTH_SET1', en: 'Cloth Sandals', pt: 'Sandálias de Tecido', res: [['CLOTH', 8]], city: 'Bridgewatch' },
+  { id: 'T4_BAG', en: 'Bag', pt: 'Bolsa', res: [['CLOTH', 8], ['LEATHER', 8]], city: 'Brecilien' },
+  { id: 'T4_CAPE', en: 'Cape', pt: 'Capa', res: [['CLOTH', 4], ['LEATHER', 4]], city: 'Brecilien' }
+];
+
+// Refining and gear crafting bonuses per royal city (+15% specialty bonus).
+// Note: the bonus city for refining a resource does NOT match the resource
+// that naturally spawns around that city — this cross-wiring is intentional
+// game design, forcing resources to be transported between cities.
+const CITY_BONUSES = [
+  { city: 'Fort Sterling', refine: { en: 'Wood → Planks', pt: 'Madeira → Tábuas' }, gear: { en: 'Hammer, Spear, Holy Staff, Plate Helmet, Cloth Armor', pt: 'Martelo, Lança, Cajado Sagrado, Elmo de Placas, Armadura de Tecido' } },
+  { city: 'Lymhurst', refine: { en: 'Fiber → Cloth', pt: 'Fibra → Tecido' }, gear: { en: 'Sword, Bow, Arcane Staff, Leather Helmet, Leather Shoes', pt: 'Espada, Arco, Cajado Arcano, Capuz de Couro, Sapatos de Couro' } },
+  { city: 'Bridgewatch', refine: { en: 'Rock → Stone Blocks', pt: 'Pedra → Blocos de Pedra' }, gear: { en: 'Crossbow, Dagger, Cursed Staff, Plate Armor, Cloth Shoes', pt: 'Besta, Adaga, Cajado Amaldiçoado, Armadura de Placas, Sandálias de Tecido' } },
+  { city: 'Martlock', refine: { en: 'Hide → Leather', pt: 'Couro cru → Couro' }, gear: { en: 'Axe, Quarterstaff, Frost Staff, Plate Boots, all Off-hands', pt: 'Machado, Bo, Cajado de Gelo, Botas de Placas, todos os Off-hands' } },
+  { city: 'Thetford', refine: { en: 'Ore → Metal Bars', pt: 'Minério → Barras de Metal' }, gear: { en: 'Mace, Nature Staff, Fire Staff, Leather Armor, Cloth Helmet', pt: 'Maça, Cajado da Natureza, Cajado de Fogo, Armadura de Couro, Capuz de Tecido' } },
+  { city: 'Caerleon', refine: { en: 'No single specialty (central trade hub)', pt: 'Sem especialidade única (centro comercial)' }, gear: { en: 'Gathering gear, tools, food, war gloves', pt: 'Equipamento de coleta, ferramentas, comida, luvas de guerra' } },
+  { city: 'Brecilien', refine: { en: 'Refines everything, no single specialty', pt: 'Refina tudo, sem especialidade única' }, gear: { en: 'Capes, Bags, Potions', pt: 'Capas, Bolsas, Poções' } }
+];
+
+function renderCraftGuide() {
+  document.getElementById('craftIntro').textContent = t('craftIntro');
+  document.getElementById('craftCityTitle').textContent = t('craftCityTitle');
+  document.getElementById('craftRecipesTitle').textContent = t('craftRecipesTitle');
+
+  const cityRows = CITY_BONUSES.map(function (c) {
+    return '<td>' + c.city + '</td><td>' + c.refine[lang] + '</td><td>' + c.gear[lang] + '</td>';
+  });
+  document.getElementById('craftCityArea').innerHTML = tabelaHtml([
+    { label: t('craftColCity') }, { label: t('craftColRefine') }, { label: t('craftColGear') }
+  ], cityRows);
+
+  const recipeRows = CRAFT_RECIPES.map(function (r) {
+    const name = lang === 'pt' ? r.pt : r.en;
+    const resText = r.res.map(function (pair) {
+      return pair[1] + ' ' + RESOURCE_NAME[lang][pair[0]];
+    }).join(' + ');
+    return '<td class="icon-cell"><img src="' + itemIconUrl(r.id, 1) + '" loading="lazy" onerror="this.style.display=\'none\'" alt="" /></td>' +
+      '<td>T4 ' + name + '</td>' +
+      '<td>' + resText + '</td>' +
+      '<td>' + r.city + '</td>';
+  });
+  document.getElementById('craftRecipesArea').innerHTML = tabelaHtml([
+    { label: '' }, { label: t('craftColItem') }, { label: t('craftColResources') }, { label: t('craftColCity') }
+  ], recipeRows);
+}
 
 let lang = 'en';
 let region = 'west';
@@ -251,7 +360,7 @@ function buildSellCityCheckboxes() {
   const box = document.getElementById('sellCitiesBox');
   const buyCity = document.getElementById('cidadeCompra').value;
   box.innerHTML = '<label class="checkbox-row"><input type="checkbox" id="sellAll" checked /> <strong id="lblSelectAll">' + t('selectAll') + '</strong></label><div class="divider"></div>';
-  CITIES.forEach(function (city) {
+  CITIES.concat(SELL_ONLY_LOCATIONS).forEach(function (city) {
     if (city === buyCity) return;
     const id = 'sell_' + city.replace(/\s+/g, '');
     const row = document.createElement('label');
@@ -315,10 +424,10 @@ function getSelectedCategories() {
 function applyLanguage() {
   document.getElementById('tabExplorer').textContent = t('marketExplorer');
   document.getElementById('tabSearch').textContent = t('itemSearch');
+  document.getElementById('tabCraft').textContent = t('craftingGuide');
   document.getElementById('lblCategory').textContent = t('category');
   document.getElementById('lblEnchant').textContent = t('enchant');
   document.getElementById('lblQuality').textContent = t('quality');
-  document.getElementById('lblNats').textContent = t('natsLabel');
   document.getElementById('lblBuyCity').textContent = t('buyCity');
   document.getElementById('lblSellCities').textContent = t('sellCities');
   document.getElementById('lblSort').textContent = t('sort');
@@ -331,6 +440,7 @@ function applyLanguage() {
   buildSellCityCheckboxes();
   if (lastCategoryCounts) buildCategoryCheckboxes(lastCategoryCounts);
   if (lastOpportunities.length) renderTable(lastOpportunities);
+  if (document.getElementById('viewCraft').style.display !== 'none') renderCraftGuide();
 }
 
 document.getElementById('idioma').addEventListener('change', function () { lang = this.value; applyLanguage(); });
@@ -343,14 +453,27 @@ document.getElementById('regiao').addEventListener('change', function () {
 document.getElementById('tabExplorer').addEventListener('click', function () {
   document.getElementById('tabExplorer').classList.add('active');
   document.getElementById('tabSearch').classList.remove('active');
+  document.getElementById('tabCraft').classList.remove('active');
   document.getElementById('viewExplorer').style.display = 'grid';
   document.getElementById('viewSearch').style.display = 'none';
+  document.getElementById('viewCraft').style.display = 'none';
 });
 document.getElementById('tabSearch').addEventListener('click', function () {
   document.getElementById('tabSearch').classList.add('active');
   document.getElementById('tabExplorer').classList.remove('active');
+  document.getElementById('tabCraft').classList.remove('active');
   document.getElementById('viewSearch').style.display = 'block';
   document.getElementById('viewExplorer').style.display = 'none';
+  document.getElementById('viewCraft').style.display = 'none';
+});
+document.getElementById('tabCraft').addEventListener('click', function () {
+  document.getElementById('tabCraft').classList.add('active');
+  document.getElementById('tabExplorer').classList.remove('active');
+  document.getElementById('tabSearch').classList.remove('active');
+  document.getElementById('viewCraft').style.display = 'block';
+  document.getElementById('viewExplorer').style.display = 'none';
+  document.getElementById('viewSearch').style.display = 'none';
+  renderCraftGuide();
 });
 
 async function pollNatsStatus() {
@@ -459,24 +582,16 @@ document.getElementById('goBtn').addEventListener('click', async function () {
     buyCity: cidadeCompra, sellCities: sellAllChecked ? 'ALL' : sellCities.join(','),
     region: region
   });
-  const usingLive = document.getElementById('usarNats').checked;
-  const endpoint = usingLive ? '/api/opportunities-live' : '/api/opportunities';
+  const endpoint = '/api/opportunities';
 
   try {
     const res = await fetch(endpoint + '?' + params.toString());
     const data = await res.json();
 
-    if (data.status === 'no_data') {
-      statusEl.textContent = t('noData');
-    } else if (data.status === 'no_items') {
+    if (data.status === 'no_items') {
       statusEl.textContent = t('noneForFilters');
     } else if (data.status === 'no_opportunities') {
-      if (usingLive) {
-        const orderCount = (data.natsStatus && data.natsStatus.orderCount) || 0;
-        statusEl.textContent = t('noOppLive', { n: orderCount });
-      } else {
-        statusEl.textContent = t('noOpp', { n: data.dataCount || 0 });
-      }
+      statusEl.textContent = t('noOpp', { n: data.dataCount || 0 });
     } else if (data.status === 'ok') {
       let opps = data.opportunities;
       opps.sort(function (a, b) { return sortMode === 'pct' ? b.pct - a.pct : b.profit - a.profit; });

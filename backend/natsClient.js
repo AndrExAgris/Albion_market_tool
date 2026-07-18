@@ -21,6 +21,10 @@ const LOCATION_MAP = {
   5000: 'Brecilien', 5001: 'Brecilien', 5003: 'Brecilien'
 };
 
+// Cap how long we keep any order in memory, regardless of what the order's
+// own Expires field says — keeps memory bounded and data reasonably fresh.
+const MAX_RETENTION_MS = 6 * 60 * 60 * 1000; // 6 hours
+
 // One independent state bucket per region.
 const state = {};
 REGIONS.forEach((r) => {
@@ -75,7 +79,8 @@ function ingestOrder(region, o) {
   if (!auction || !o.UnitPriceSilver || o.UnitPriceSilver <= 0) return;
 
   const parsedExpires = o.Expires ? Date.parse(o.Expires) : NaN;
-  const expiresAt = Number.isNaN(parsedExpires) ? Date.now() + 24 * 3600 * 1000 : parsedExpires;
+  const naturalExpiresAt = Number.isNaN(parsedExpires) ? Date.now() + 24 * 3600 * 1000 : parsedExpires;
+  const expiresAt = Math.min(naturalExpiresAt, Date.now() + MAX_RETENTION_MS);
 
   const order = {
     itemId: o.ItemTypeId,

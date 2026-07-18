@@ -12,6 +12,11 @@ const ITEMS_URL = 'https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master
 
 const REGIONS = ['west', 'europe', 'east'];
 const CITIES = ['Caerleon', 'Bridgewatch', 'Fort Sterling', 'Lymhurst', 'Martlock', 'Thetford', 'Brecilien'];
+// Black Market is tracked by AODP as its own location, separate from the regular
+// Caerleon market. It only ever has BUY orders (NPCs buying PvE loot from players),
+// never sell orders, so it can only be a sell destination, never a buy source.
+const SELL_ONLY_LOCATIONS = ['Black Market'];
+const ALL_LOCATIONS = CITIES.concat(SELL_ONLY_LOCATIONS);
 
 const EXCLUDE_RE = [
   /^DEBUG_/, /^GVGSEASONREWARD/, /^HELLGATE_/, /^QUESTITEM/, /^UNIQUE_/, /^LABOURER/, /^HIDEOUT/, /^ROAD_/,
@@ -111,7 +116,7 @@ async function fetchPricesInBatches(ids, qualities, region) {
       const my = index++;
       const batch = batches[my];
       const url = 'https://' + region + '.albion-online-data.com/api/v2/stats/prices/' +
-        batch.join(',') + '.json?locations=' + encodeURIComponent(CITIES.join(',')) + '&qualities=' + qualities.join(',');
+        batch.join(',') + '.json?locations=' + encodeURIComponent(ALL_LOCATIONS.join(',')) + '&qualities=' + qualities.join(',');
       try {
         const res = await fetch(url);
         if (res.ok) {
@@ -158,9 +163,9 @@ function parseRegion(req) {
 // Returns the resolved list of destination cities (buyCity excluded).
 function parseSellCities(req, buyCity) {
   const raw = String(req.query.sellCities || 'ALL');
-  if (raw === 'ALL') return CITIES.filter((c) => c !== buyCity);
+  if (raw === 'ALL') return ALL_LOCATIONS.filter((c) => c !== buyCity);
   const requested = raw.split(',').map((s) => s.trim()).filter(Boolean);
-  const invalid = requested.filter((c) => !CITIES.includes(c));
+  const invalid = requested.filter((c) => !ALL_LOCATIONS.includes(c));
   if (invalid.length) return { error: invalid };
   return requested.filter((c) => c !== buyCity);
 }
@@ -187,7 +192,7 @@ async function fetchHistoryInBatches(ids, region, days) {
       const my = index++;
       const batch = batches[my];
       const url = 'https://' + region + '.albion-online-data.com/api/v2/stats/history/' +
-        batch.join(',') + '.json?locations=' + encodeURIComponent(CITIES.join(',')) +
+        batch.join(',') + '.json?locations=' + encodeURIComponent(ALL_LOCATIONS.join(',')) +
         '&qualities=1&time-scale=24&date=' + fmtDate(start) + '&end_date=' + fmtDate(end);
       try {
         const res = await fetch(url);
@@ -319,12 +324,6 @@ app.get('/api/opportunities', async (req, res) => {
   const ids = items.map((it) => it.id);
   const data = await fetchPricesInBatches(ids, qualities, region);
 
-  if (data.length === 0) {
-    const payload = { status: 'no_data', opportunities: [] };
-    opportunityCache.set(cacheKey, { at: Date.now(), payload });
-    return res.json(payload);
-  }
-
   const byItem = {};
   data.forEach((row) => {
     if (!byItem[row.item_id]) byItem[row.item_id] = {};
@@ -332,33 +331,30 @@ app.get('/api/opportunities', async (req, res) => {
     byItem[row.item_id][row.city][row.quality] = row;
   });
 
-  function sellPriceAt(destino) {
-    if (!destino) return null;
-    if (destino.buy_price_max > 0) return destino.buy_price_max;
-    return null;
-  }
-
   const opportunities = [];
   items.forEach((it) => {
     const byCity = byItem[it.id];
-    if (!byCity) return;
     qualities.forEach((q) => {
-      const origin = byCity[buyCity] && byCity[buyCity][q];
-      if (!origin) return;
-      const buyCost = origin.sell_price_min;
+      const restOrigin = byCity && byCity[buyCity] && byCity[buyCity][q];
+      const natsOrigin = USE_NATS ? natsClient.bestPrices(it.id, buyCity, q, region) : { sellMin: null, buyMax: null };
+      const buyLive = natsOrigin.sellMin != null && natsOrigin.sellMin > 0;
+      const buyCost = buyLive ? natsOrigin.sellMin : (restOrigin ? restOrigin.sell_price_min : null);
       if (!buyCost || buyCost <= 0) return;
 
       sellCities.forEach((sellCity) => {
-        const destino = byCity[sellCity] && byCity[sellCity][q];
-        const price = sellPriceAt(destino);
-        if (price && price > buyCost) {
-          const profit = price - buyCost;
+        const restDest = byCity && byCity[sellCity] && byCity[sellCity][q];
+        const natsDest = USE_NATS ? natsClient.bestPrices(it.id, sellCity, q, region) : { sellMin: null, buyMax: null };
+        const sellLive = natsDest.buyMax != null && natsDest.buyMax > 0;
+        const sellPrice = sellLive ? natsDest.buyMax : (restDest ? restDest.buy_price_max : null);
+        if (sellPrice && sellPrice > buyCost) {
+          const profit = sellPrice - buyCost;
           opportunities.push({
             id: it.id, quality: q, en: it.en, pt: it.pt,
-            buyCost, destCity: sellCity, sellPrice: price,
+            buyCost, destCity: sellCity, sellPrice,
             profit, pct: profit / buyCost * 100,
-            buyCostDate: origin.sell_price_min_date || null,
-            sellPriceDate: destino.buy_price_max_date || null
+            buyCostDate: buyLive ? null : (restOrigin && restOrigin.sell_price_min_date) || null,
+            sellPriceDate: sellLive ? null : (restDest && restDest.buy_price_max_date) || null,
+            buyLive, sellLive
           });
         }
       });
@@ -369,7 +365,12 @@ app.get('/api/opportunities', async (req, res) => {
   const top = opportunities.slice(0, 60);
   if (top.length > 0) await attachVolume24h(top, region);
 
-  const payload = { status: top.length ? 'ok' : 'no_opportunities', dataCount: data.length, opportunities: top };
+  const payload = {
+    status: top.length ? 'ok' : 'no_opportunities',
+    dataCount: data.length,
+    natsStatus: USE_NATS ? natsClient.status()[region] : null,
+    opportunities: top
+  };
   opportunityCache.set(cacheKey, { at: Date.now(), payload });
   res.json(payload);
 });
@@ -389,7 +390,7 @@ app.get('/api/item-history', async (req, res) => {
   const fmt = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 
   const url = 'https://' + region + '.albion-online-data.com/api/v2/stats/history/' + encodeURIComponent(id) + '.json?locations=' +
-    encodeURIComponent(CITIES.join(',')) + '&qualities=1&time-scale=24&date=' + fmt(start) + '&end_date=' + fmt(end);
+    encodeURIComponent(ALL_LOCATIONS.join(',')) + '&qualities=1&time-scale=24&date=' + fmt(start) + '&end_date=' + fmt(end);
 
   try {
     const r = await fetch(url);
@@ -404,58 +405,6 @@ app.get('/api/item-history', async (req, res) => {
 
 app.get('/api/nats-status', (req, res) => {
   res.json({ enabled: USE_NATS, regions: natsClient.status() });
-});
-
-app.get('/api/opportunities-live', async (req, res) => {
-  if (!USE_NATS) return res.status(503).json({ status: 'nats_disabled' });
-  if (!catalogReady) return res.status(503).json({ status: 'catalog_not_ready' });
-
-  const includeEnchanted = req.query.enchanted === 'true';
-  const includeQualities = req.query.qualities === 'true';
-  const buyCity = String(req.query.buyCity || '');
-  const region = parseRegion(req);
-  const qualities = includeQualities ? [1, 2, 3, 4, 5] : [1];
-
-  if (!CITIES.includes(buyCity)) return res.status(400).json({ status: 'invalid_buy_city' });
-  const sellCities = parseSellCities(req, buyCity);
-  if (sellCities.error) return res.status(400).json({ status: 'invalid_sell_city', invalid: sellCities.error });
-  if (sellCities.length === 0) return res.status(400).json({ status: 'no_sell_cities' });
-  const categories = parseCategories(req);
-  if (categories.error) return res.status(400).json({ status: 'invalid_category', invalid: categories.error });
-
-  const items = buildItemList(categories, includeEnchanted);
-  if (items.length === 0) return res.json({ status: 'no_items', opportunities: [] });
-
-  const opportunities = [];
-  items.forEach((it) => {
-    qualities.forEach((q) => {
-      const origin = natsClient.bestPrices(it.id, buyCity, q, region);
-      const buyCost = origin.sellMin;
-      if (!buyCost || buyCost <= 0) return;
-
-      sellCities.forEach((sellCity) => {
-        const dest = natsClient.bestPrices(it.id, sellCity, q, region);
-        if (dest.buyMax && dest.buyMax > buyCost) {
-          const profit = dest.buyMax - buyCost;
-          opportunities.push({
-            id: it.id, quality: q, en: it.en, pt: it.pt,
-            buyCost, destCity: sellCity, sellPrice: dest.buyMax,
-            profit, pct: profit / buyCost * 100
-          });
-        }
-      });
-    });
-  });
-
-  opportunities.sort((a, b) => b.profit - a.profit);
-  const top = opportunities.slice(0, 60);
-  if (top.length > 0) await attachVolume24h(top, region);
-
-  res.json({
-    status: top.length ? 'ok' : 'no_opportunities',
-    natsStatus: natsClient.status()[region],
-    opportunities: top
-  });
 });
 
 app.listen(PORT, () => {
