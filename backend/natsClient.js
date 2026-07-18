@@ -27,12 +27,33 @@ REGIONS.forEach((r) => {
   state[r] = {
     connected: false,
     orderBook: new Map(), // orderId -> { itemId, city, quality, price, auction, expiresAt }
+    byKey: new Map(), // "itemId|city|quality" -> Map(orderId -> order)  (fast lookup index)
     unknownLocationCounts: new Map(),
     perCityMessageCounts: new Map(),
     messageCount: 0,
     lastMessageAt: null
   };
 });
+
+function keyOf(order) {
+  return order.itemId + '|' + order.city + '|' + order.quality;
+}
+
+function removeFromIndex(s, orderId, oldOrder) {
+  if (!oldOrder) return;
+  const bucket = s.byKey.get(keyOf(oldOrder));
+  if (bucket) {
+    bucket.delete(orderId);
+    if (bucket.size === 0) s.byKey.delete(keyOf(oldOrder));
+  }
+}
+
+function addToIndex(s, orderId, order) {
+  const key = keyOf(order);
+  let bucket = s.byKey.get(key);
+  if (!bucket) { bucket = new Map(); s.byKey.set(key, bucket); }
+  bucket.set(orderId, order);
+}
 
 function normalizeAuctionType(raw) {
   if (!raw) return null;
@@ -56,14 +77,19 @@ function ingestOrder(region, o) {
   const parsedExpires = o.Expires ? Date.parse(o.Expires) : NaN;
   const expiresAt = Number.isNaN(parsedExpires) ? Date.now() + 24 * 3600 * 1000 : parsedExpires;
 
-  s.orderBook.set(o.Id, {
+  const order = {
     itemId: o.ItemTypeId,
     city,
     quality: o.QualityLevel || 1,
     price: o.UnitPriceSilver,
     auction,
     expiresAt
-  });
+  };
+
+  const oldOrder = s.orderBook.get(o.Id);
+  if (oldOrder) removeFromIndex(s, o.Id, oldOrder);
+  s.orderBook.set(o.Id, order);
+  addToIndex(s, o.Id, order);
 
   s.messageCount++;
   s.lastMessageAt = new Date();
@@ -74,7 +100,10 @@ function pruneExpired(region) {
   const s = state[region];
   const now = Date.now();
   for (const [id, order] of s.orderBook) {
-    if (order.expiresAt < now) s.orderBook.delete(id);
+    if (order.expiresAt < now) {
+      removeFromIndex(s, id, order);
+      s.orderBook.delete(id);
+    }
   }
 }
 
@@ -125,11 +154,13 @@ async function start(regions) {
 
 function bestPrices(itemId, city, quality, region) {
   const s = state[region] || state.west;
+  const bucket = s.byKey.get(itemId + '|' + city + '|' + quality);
+  if (!bucket || bucket.size === 0) return { sellMin: null, buyMax: null };
+
   let sellMin = null;
   let buyMax = null;
   const now = Date.now();
-  for (const order of s.orderBook.values()) {
-    if (order.itemId !== itemId || order.city !== city || order.quality !== quality) continue;
+  for (const order of bucket.values()) {
     if (order.expiresAt < now) continue;
     if (order.auction === 'offer') {
       if (sellMin === null || order.price < sellMin) sellMin = order.price;

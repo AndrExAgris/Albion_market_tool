@@ -8,7 +8,6 @@ const DEFAULT_REGION = process.env.REGION || 'west'; // west = Americas, europe 
 const USE_NATS = process.env.USE_NATS !== 'false'; // set USE_NATS=false to disable the live feed entirely
 const DATA_DIR = process.env.DATA_DIR || '/data';
 const CATALOG_FILE = path.join(DATA_DIR, 'catalog_v2.json');
-const CATALOG_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // re-fetch from GitHub at most once a week
 const ITEMS_URL = 'https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/items.json';
 
 const REGIONS = ['west', 'europe', 'east'];
@@ -19,19 +18,21 @@ const EXCLUDE_RE = [
   /_TOKEN(_|$)/, /PROTOTYPE/, /ARENA_BANNER/, /_BP$/
 ];
 
+const CATEGORY_KEYS = ['resources', 'food', 'weapons', 'armor', 'artifacts', 'bagcape', 'journals', 'furniture', 'other'];
+
 const CAT_RULES = [
   [/^ARTEFACT_/, 'artifacts'],
   [/^(MAIN_|2H_|OFF_)/, 'weapons'],
   [/^(HEAD_|ARMOR_|SHOES_)/, 'armor'],
   [/^(BAG|CAPE)/, 'bagcape'],
   [/^(WOOD|ORE|FIBER|HIDE|ROCK|PLANKS|METALBAR|CLOTH|LEATHER|STONEBLOCK)$/, 'resources'],
-  [/^POTION_/, 'potions'],
+  [/^POTION_/, 'food'],
   [/^MEAL_/, 'food'],
-  [/^FARM_(OX|HORSE|DIREWOLF|DIREBOAR|DIREBEAR|SWAMPDRAGON|MAMMOTH|COUGAR|GIANTSTAG|RABBIT|MOABIRD|RAM|GREYWOLF|CHICKEN|GOAT|GOOSE|SHEEP|PIG|COW)/, 'mounts'],
-  [/_SEED$/, 'seeds'],
+  [/^FISH_/, 'food'],
   [/^JOURNAL_/, 'journals'],
-  [/^FURNITUREITEM_/, 'furniture'],
-  [/^(FISH_|FISHSAUCE|FISHCHOPS|FISHINGBAIT)/, 'fish']
+  [/^FURNITUREITEM_/, 'furniture']
+  // anything else (farm mounts, seeds, fish byproducts like sauce/chops/bait,
+  // and any other leftover category) falls through to 'other'
 ];
 
 function categorize(base) {
@@ -69,32 +70,30 @@ async function fetchAndBuildCatalog() {
 
 async function loadCatalog() {
   try {
-    if (fs.existsSync(CATALOG_FILE)) {
-      const stat = fs.statSync(CATALOG_FILE);
-      const age = Date.now() - stat.mtimeMs;
-      const cached = JSON.parse(fs.readFileSync(CATALOG_FILE, 'utf8'));
-      CATALOG = cached;
-      catalogReady = true;
-      catalogLoadedAt = stat.mtime;
-      console.log('Loaded catalog from disk cache (' + cached.length + ' items, age ' + Math.round(age / 3600000) + 'h)');
-      if (age < CATALOG_MAX_AGE_MS) return;
-      console.log('Cache is old, refreshing in background...');
-    }
-  } catch (e) {
-    console.warn('Could not read catalog cache:', e.message);
-  }
-
-  try {
     const fresh = await fetchAndBuildCatalog();
     CATALOG = fresh;
     catalogReady = true;
     catalogLoadedAt = new Date();
     fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(CATALOG_FILE, JSON.stringify(fresh));
-    console.log('Fetched and cached fresh catalog (' + fresh.length + ' items)');
+    console.log('Fetched fresh catalog on startup (' + fresh.length + ' items)');
+    return;
   } catch (e) {
-    console.error('Failed to fetch catalog:', e.message);
-    if (CATALOG.length === 0) catalogReady = false;
+    console.warn('Could not fetch fresh catalog on startup (' + e.message + '), falling back to disk cache if any');
+  }
+
+  try {
+    if (fs.existsSync(CATALOG_FILE)) {
+      const cached = JSON.parse(fs.readFileSync(CATALOG_FILE, 'utf8'));
+      CATALOG = cached;
+      catalogReady = true;
+      catalogLoadedAt = fs.statSync(CATALOG_FILE).mtime;
+      console.log('Using cached catalog as fallback (' + cached.length + ' items)');
+    } else {
+      console.error('No catalog available: fresh fetch failed and there is no disk cache yet.');
+    }
+  } catch (e) {
+    console.error('Could not read catalog cache fallback:', e.message);
   }
 }
 
@@ -131,13 +130,23 @@ async function fetchPricesInBatches(ids, qualities, region) {
   return results;
 }
 
-function buildItemList(category, tierMin, tierMax, includeEnchanted) {
+function buildItemList(categories, includeEnchanted) {
+  const allCats = categories.length === 0;
   return CATALOG.filter((it) => {
-    if (category !== 'all' && it.cat !== category) return false;
-    if (it.tier < tierMin || it.tier > tierMax) return false;
+    if (!allCats && !categories.includes(it.cat)) return false;
     if (!includeEnchanted && it.ench > 0) return false;
     return true;
   });
+}
+
+// categories query param: "ALL" or a comma-separated list of category keys.
+function parseCategories(req) {
+  const raw = String(req.query.categories || 'ALL');
+  if (raw === 'ALL') return [];
+  const requested = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  const invalid = requested.filter((c) => !CATEGORY_KEYS.includes(c));
+  if (invalid.length) return { error: invalid };
+  return requested;
 }
 
 function parseRegion(req) {
@@ -154,6 +163,78 @@ function parseSellCities(req, buyCity) {
   const invalid = requested.filter((c) => !CITIES.includes(c));
   if (invalid.length) return { error: invalid };
   return requested.filter((c) => c !== buyCity);
+}
+
+function fmtDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+async function fetchHistoryInBatches(ids, region, days) {
+  const batchSize = 60;
+  const batches = [];
+  for (let i = 0; i < ids.length; i += batchSize) batches.push(ids.slice(i, i + batchSize));
+
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+
+  const results = [];
+  const concurrency = 8;
+  let index = 0;
+
+  async function worker() {
+    while (index < batches.length) {
+      const my = index++;
+      const batch = batches[my];
+      const url = 'https://' + region + '.albion-online-data.com/api/v2/stats/history/' +
+        batch.join(',') + '.json?locations=' + encodeURIComponent(CITIES.join(',')) +
+        '&qualities=1&time-scale=24&date=' + fmtDate(start) + '&end_date=' + fmtDate(end);
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          results.push(...data);
+        }
+      } catch (e) {
+        console.warn('History batch fetch failed:', e.message);
+      }
+    }
+  }
+
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, batches.length); i++) workers.push(worker());
+  await Promise.all(workers);
+  return results;
+}
+
+// Attaches a `volume24h: { qty, avgPrice } | null` field to each opportunity,
+// based on sales in its destination city over the last 24h. Only called for
+// the (already sorted + capped) list that will actually be returned, to
+// avoid an unbounded number of extra API calls.
+async function attachVolume24h(opportunities, region) {
+  const uniqueIds = [...new Set(opportunities.map((o) => o.id))];
+  if (uniqueIds.length === 0) return opportunities;
+
+  const history = await fetchHistoryInBatches(uniqueIds, region, 1);
+  const byItemCity = {}; // itemId -> city -> { qty, weightedSum }
+  history.forEach((row) => {
+    if (!row.data || row.data.length === 0) return;
+    let qty = 0;
+    let weightedSum = 0;
+    row.data.forEach((d) => {
+      qty += d.item_count;
+      weightedSum += d.avg_price * d.item_count;
+    });
+    if (qty === 0) return;
+    if (!byItemCity[row.item_id]) byItemCity[row.item_id] = {};
+    byItemCity[row.item_id][row.location] = { qty, avgPrice: Math.round(weightedSum / qty) };
+  });
+
+  opportunities.forEach((o) => {
+    const v = byItemCity[o.id] && byItemCity[o.id][o.destCity];
+    o.volume24h = v || null;
+  });
+  return opportunities;
 }
 
 const opportunityCache = new Map(); // key -> { at, payload }
@@ -180,14 +261,20 @@ app.get('/api/search-items', (req, res) => {
   if (!catalogReady) return res.status(503).json({ ready: false, results: [] });
   const q = String(req.query.q || '').trim().toLowerCase();
   if (q.length < 2) return res.json({ results: [] });
-  const results = [];
+
+  const scored = [];
   for (const it of CATALOG) {
-    if (it.en.toLowerCase().includes(q) || it.pt.toLowerCase().includes(q) || it.id.toLowerCase().includes(q)) {
-      results.push(it);
-      if (results.length >= 25) break;
-    }
+    const en = it.en.toLowerCase();
+    const pt = it.pt.toLowerCase();
+    let score;
+    if (en.startsWith(q) || pt.startsWith(q)) score = 0;
+    else if (en.includes(q) || pt.includes(q)) score = 1;
+    else if (it.id.toLowerCase().includes(q)) score = 2;
+    else continue;
+    scored.push({ it, score });
   }
-  res.json({ results });
+  scored.sort((a, b) => a.score - b.score || a.it.tier - b.it.tier || a.it.en.localeCompare(b.it.en));
+  res.json({ results: scored.slice(0, 25).map((s) => s.it) });
 });
 
 app.get('/api/item-prices', async (req, res) => {
@@ -207,9 +294,6 @@ app.get('/api/item-prices', async (req, res) => {
 app.get('/api/opportunities', async (req, res) => {
   if (!catalogReady) return res.status(503).json({ status: 'catalog_not_ready' });
 
-  const category = String(req.query.category || 'all');
-  const tierMin = Math.max(1, parseInt(req.query.tierMin, 10) || 1);
-  const tierMax = Math.min(8, parseInt(req.query.tierMax, 10) || 8);
   const includeEnchanted = req.query.enchanted === 'true';
   const includeQualities = req.query.qualities === 'true';
   const buyCity = String(req.query.buyCity || '');
@@ -220,14 +304,16 @@ app.get('/api/opportunities', async (req, res) => {
   const sellCities = parseSellCities(req, buyCity);
   if (sellCities.error) return res.status(400).json({ status: 'invalid_sell_city', invalid: sellCities.error });
   if (sellCities.length === 0) return res.status(400).json({ status: 'no_sell_cities' });
+  const categories = parseCategories(req);
+  if (categories.error) return res.status(400).json({ status: 'invalid_category', invalid: categories.error });
 
-  const cacheKey = JSON.stringify({ category, tierMin, tierMax, includeEnchanted, includeQualities, buyCity, sellCities, region });
+  const cacheKey = JSON.stringify({ categories, includeEnchanted, includeQualities, buyCity, sellCities, region });
   const cached = opportunityCache.get(cacheKey);
   if (cached && Date.now() - cached.at < OPP_CACHE_TTL_MS) {
     return res.json(cached.payload);
   }
 
-  const items = buildItemList(category, tierMin, tierMax, includeEnchanted);
+  const items = buildItemList(categories, includeEnchanted);
   if (items.length === 0) return res.json({ status: 'no_items', opportunities: [] });
 
   const ids = items.map((it) => it.id);
@@ -263,35 +349,67 @@ app.get('/api/opportunities', async (req, res) => {
       if (!buyCost || buyCost <= 0) return;
 
       sellCities.forEach((sellCity) => {
-        const price = sellPriceAt(byCity[sellCity] && byCity[sellCity][q]);
+        const destino = byCity[sellCity] && byCity[sellCity][q];
+        const price = sellPriceAt(destino);
         if (price && price > buyCost) {
           const profit = price - buyCost;
           opportunities.push({
             id: it.id, quality: q, en: it.en, pt: it.pt,
             buyCost, destCity: sellCity, sellPrice: price,
-            profit, pct: profit / buyCost * 100
+            profit, pct: profit / buyCost * 100,
+            buyCostDate: origin.sell_price_min_date || null,
+            sellPriceDate: destino.buy_price_max_date || null
           });
         }
       });
     });
   });
 
-  const payload = { status: opportunities.length ? 'ok' : 'no_opportunities', dataCount: data.length, opportunities };
+  opportunities.sort((a, b) => b.profit - a.profit);
+  const top = opportunities.slice(0, 60);
+  if (top.length > 0) await attachVolume24h(top, region);
+
+  const payload = { status: top.length ? 'ok' : 'no_opportunities', dataCount: data.length, opportunities: top };
   opportunityCache.set(cacheKey, { at: Date.now(), payload });
   res.json(payload);
+});
+
+app.get('/api/item-history', async (req, res) => {
+  if (!catalogReady) return res.status(503).json({ status: 'catalog_not_ready' });
+  const id = String(req.query.id || '');
+  const item = CATALOG.find((it) => it.id === id);
+  if (!item) return res.status(404).json({ status: 'unknown_item' });
+
+  const region = parseRegion(req);
+  const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 7));
+
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+  const fmt = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+  const url = 'https://' + region + '.albion-online-data.com/api/v2/stats/history/' + encodeURIComponent(id) + '.json?locations=' +
+    encodeURIComponent(CITIES.join(',')) + '&qualities=1&time-scale=24&date=' + fmt(start) + '&end_date=' + fmt(end);
+
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return res.json({ status: 'no_data', history: [] });
+    const data = await r.json();
+    res.json({ status: data.length ? 'ok' : 'no_data', history: data });
+  } catch (e) {
+    console.warn('History fetch failed:', e.message);
+    res.json({ status: 'error', history: [] });
+  }
 });
 
 app.get('/api/nats-status', (req, res) => {
   res.json({ enabled: USE_NATS, regions: natsClient.status() });
 });
 
-app.get('/api/opportunities-live', (req, res) => {
+app.get('/api/opportunities-live', async (req, res) => {
   if (!USE_NATS) return res.status(503).json({ status: 'nats_disabled' });
   if (!catalogReady) return res.status(503).json({ status: 'catalog_not_ready' });
 
-  const category = String(req.query.category || 'all');
-  const tierMin = Math.max(1, parseInt(req.query.tierMin, 10) || 1);
-  const tierMax = Math.min(8, parseInt(req.query.tierMax, 10) || 8);
   const includeEnchanted = req.query.enchanted === 'true';
   const includeQualities = req.query.qualities === 'true';
   const buyCity = String(req.query.buyCity || '');
@@ -302,8 +420,10 @@ app.get('/api/opportunities-live', (req, res) => {
   const sellCities = parseSellCities(req, buyCity);
   if (sellCities.error) return res.status(400).json({ status: 'invalid_sell_city', invalid: sellCities.error });
   if (sellCities.length === 0) return res.status(400).json({ status: 'no_sell_cities' });
+  const categories = parseCategories(req);
+  if (categories.error) return res.status(400).json({ status: 'invalid_category', invalid: categories.error });
 
-  const items = buildItemList(category, tierMin, tierMax, includeEnchanted);
+  const items = buildItemList(categories, includeEnchanted);
   if (items.length === 0) return res.json({ status: 'no_items', opportunities: [] });
 
   const opportunities = [];
@@ -327,10 +447,14 @@ app.get('/api/opportunities-live', (req, res) => {
     });
   });
 
+  opportunities.sort((a, b) => b.profit - a.profit);
+  const top = opportunities.slice(0, 60);
+  if (top.length > 0) await attachVolume24h(top, region);
+
   res.json({
-    status: opportunities.length ? 'ok' : 'no_opportunities',
+    status: top.length ? 'ok' : 'no_opportunities',
     natsStatus: natsClient.status()[region],
-    opportunities
+    opportunities: top
   });
 });
 

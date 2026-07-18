@@ -11,43 +11,44 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.5; font-size: 15px; }
-  select, button, input { font-family: inherit; font-size: 14px; }
-  select, input[type=text] { width: 100%; padding: 9px 10px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--surface); color: var(--text); }
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.5; font-size: 16px; }
+  select, button, input { font-family: inherit; font-size: 15px; }
+  select, input[type=text] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--surface); color: var(--text); }
 
   /* Top bar */
   .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px;
     padding: 12px 20px; border-bottom: 0.5px solid var(--border); background: var(--surface); flex-wrap: wrap; }
   .topbar-left { display: flex; align-items: center; gap: 24px; }
-  .logo { font-weight: 700; font-size: 17px; white-space: nowrap; }
+  .logo { font-weight: 700; font-size: 18px; white-space: nowrap; }
   .tabs { display: flex; gap: 4px; }
   .tab-btn { padding: 8px 16px; border-radius: 8px; border: none; background: transparent; color: var(--text-secondary);
-    cursor: pointer; font-weight: 500; font-size: 14px; }
+    cursor: pointer; font-weight: 500; font-size: 15px; }
   .tab-btn.active { background: var(--surface-2); color: var(--text); }
   .topbar-right { display: flex; gap: 8px; }
   .topbar-right select { width: auto; min-width: 110px; }
 
   /* Layout */
-  .layout { display: grid; grid-template-columns: 270px 1fr; gap: 0; align-items: start; }
-  .sidebar { padding: 20px; border-right: 0.5px solid var(--border); position: sticky; top: 0; }
+  .layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; align-items: start; }
+  .sidebar { padding: 14px 16px; border-right: 0.5px solid var(--border); position: sticky; top: 0; height: calc(100vh - 57px); overflow-y: hidden; display: flex; flex-direction: column; }
   .main { padding: 20px; min-width: 0; }
-  .field { margin-bottom: 12px; }
-  .field label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.02em; }
-  .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 4px 0; }
+  .field { margin-bottom: 8px; }
+  .field label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.02em; }
+  .checkbox-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); padding: 2px 0; }
   .checkbox-row input { width: auto; }
-  .city-checks { border: 0.5px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--surface); }
-  .divider { border-top: 0.5px solid var(--border); margin: 4px 0 8px; }
-  button.go { width: 100%; padding: 11px; border-radius: 8px; border: 0.5px solid var(--accent); background: var(--accent);
-    color: #fff; cursor: pointer; font-weight: 600; margin-top: 6px; }
+  .check-box-group { border: 0.5px solid var(--border); border-radius: 8px; padding: 5px 10px; background: var(--surface); max-height: 130px; overflow-y: auto; }
+  .divider { border-top: 0.5px solid var(--border); margin: 3px 0 5px; }
+  button.go { width: 100%; padding: 10px; border-radius: 8px; border: 0.5px solid var(--accent); background: var(--accent);
+    color: #fff; cursor: pointer; font-weight: 600; margin-top: auto; font-size: 14px; }
   button.go:disabled { opacity: 0.6; cursor: default; }
+  select, input[type=text] { padding: 7px 10px; }
 
-  .status { font-size: 13px; color: var(--text-secondary); margin: 0 0 16px; min-height: 18px; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { padding: 10px 8px; text-align: left; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
-  th { color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
+  .status { font-size: 14px; color: var(--text-secondary); margin: 0 0 16px; min-height: 18px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { padding: 12px 10px; text-align: left; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em; }
   td.num, th.num { text-align: right; }
-  td.icon-cell { width: 48px; }
-  td.icon-cell img { width: 36px; height: 36px; border-radius: 6px; background: var(--surface-2); display: block; }
+  td.icon-cell { width: 56px; }
+  td.icon-cell img { width: 44px; height: 44px; border-radius: 6px; background: var(--surface-2); display: block; }
   .profit { color: var(--success); font-weight: 600; }
   .table-wrap { overflow-x: auto; }
   .note { font-size: 12px; color: var(--text-secondary); margin-top: 24px; border-top: 0.5px solid var(--border); padding-top: 16px; }
@@ -55,17 +56,22 @@
   /* Item search */
   .search-box { position: relative; max-width: 480px; margin-bottom: 20px; }
   .search-results-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface);
-    border: 0.5px solid var(--border); border-radius: 8px; margin-top: 4px; max-height: 320px; overflow-y: auto; z-index: 10; }
-  .search-result-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; }
+    border: 0.5px solid var(--border); border-radius: 8px; margin-top: 4px; max-height: 340px; overflow-y: auto; z-index: 10; }
+  .search-result-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; font-size: 15px; }
   .search-result-item:hover { background: var(--surface-2); }
-  .search-result-item img { width: 28px; height: 28px; border-radius: 4px; background: var(--surface-2); }
-  .selected-item-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .selected-item-header img { width: 48px; height: 48px; border-radius: 8px; background: var(--surface-2); }
-  .selected-item-header h2 { font-size: 18px; margin: 0; }
+  .search-result-item img { width: 32px; height: 32px; border-radius: 4px; background: var(--surface-2); }
+  .selected-item-header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 24px; }
+  .selected-item-header img { width: 140px; height: 140px; border-radius: 12px; background: var(--surface-2); }
+  .selected-item-header h2 { font-size: 22px; margin: 0; }
+  .period-buttons { display: flex; gap: 6px; margin: 20px 0 12px; }
+  .period-btn { padding: 7px 14px; border-radius: 20px; border: 0.5px solid var(--border); background: var(--surface);
+    color: var(--text-secondary); cursor: pointer; font-size: 13px; }
+  .period-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .section-title { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
 
   @media (max-width: 800px) {
     .layout { grid-template-columns: 1fr; }
-    .sidebar { position: static; border-right: none; border-bottom: 0.5px solid var(--border); }
+    .sidebar { position: static; border-right: none; border-bottom: 0.5px solid var(--border); height: auto; overflow-y: visible; }
   }
 </style>
 </head>
@@ -97,19 +103,9 @@
   <div class="sidebar">
     <div class="field">
       <label id="lblCategory">Category</label>
-      <select id="categoria"><option value="all">...</option></select>
-    </div>
-    <div class="field">
-      <label id="lblTier">Tier</label>
-      <div style="display:flex; gap:6px;">
-        <select id="tierMin">
-          <option value="1">T1</option><option value="2" selected>T2</option><option value="3">T3</option><option value="4">T4</option>
-          <option value="5">T5</option><option value="6">T6</option><option value="7">T7</option><option value="8">T8</option>
-        </select>
-        <select id="tierMax">
-          <option value="1">T1</option><option value="2">T2</option><option value="3">T3</option><option value="4">T4</option>
-          <option value="5">T5</option><option value="6">T6</option><option value="7">T7</option><option value="8" selected>T8</option>
-        </select>
+      <div class="check-box-group" id="categoryBox">
+        <label class="checkbox-row"><input type="checkbox" id="catAll" checked /> <strong id="lblSelectAllCat">Select all</strong></label>
+        <div class="divider"></div>
       </div>
     </div>
     <div class="field">
@@ -127,7 +123,7 @@
     </div>
     <div class="field">
       <label id="lblSellCities">Sell cities</label>
-      <div class="city-checks" id="sellCitiesBox">
+      <div class="check-box-group" id="sellCitiesBox">
         <label class="checkbox-row"><input type="checkbox" id="sellAll" checked /> <strong id="lblSelectAll">Select all</strong></label>
         <div class="divider"></div>
       </div>
@@ -161,14 +157,16 @@
 
 <script>
 const CITIES = ['Caerleon', 'Bridgewatch', 'Fort Sterling', 'Lymhurst', 'Martlock', 'Thetford', 'Brecilien'];
+const CATEGORY_ORDER = ['resources','food','weapons','armor','artifacts','bagcape','journals','furniture','other'];
+const PERIODS = [1, 7, 30];
 
 const CAT_LABELS = {
-  pt: { all: 'Tudo', resources: 'Recursos', potions: 'Poções', food: 'Comida', weapons: 'Armas e ferramentas',
-    armor: 'Armaduras', artifacts: 'Artefatos', bagcape: 'Bolsas e capas', mounts: 'Montarias de fazenda',
-    seeds: 'Sementes', journals: 'Diários de trabalhador', furniture: 'Móveis e troféus', fish: 'Peixes e derivados', other: 'Outros' },
-  en: { all: 'Everything', resources: 'Resources', potions: 'Potions', food: 'Food', weapons: 'Weapons and tools',
-    armor: 'Armor', artifacts: 'Artifacts', bagcape: 'Bags and capes', mounts: 'Farm mounts',
-    seeds: 'Seeds', journals: 'Laborer journals', furniture: 'Furniture and trophies', fish: 'Fish and byproducts', other: 'Other' }
+  pt: { resources: 'Recursos', food: 'Comida e poções', weapons: 'Armas e ferramentas',
+    armor: 'Armaduras', artifacts: 'Artefatos', bagcape: 'Bolsas e capas',
+    journals: 'Diários de trabalhador', furniture: 'Móveis e troféus', other: 'Outros' },
+  en: { resources: 'Resources', food: 'Food and potions', weapons: 'Weapons and tools',
+    armor: 'Armor', artifacts: 'Artifacts', bagcape: 'Bags and capes',
+    journals: 'Laborer journals', furniture: 'Furniture and trophies', other: 'Other' }
 };
 
 const QUALITY_LABELS = {
@@ -179,7 +177,7 @@ const QUALITY_LABELS = {
 const I18N = {
   pt: {
     marketExplorer: 'Explorador de mercado', itemSearch: 'Buscar item',
-    category: 'Categoria', tier: 'Tier', enchant: 'Incluir encantados', quality: 'Incluir outras qualidades',
+    category: 'Categoria', enchant: 'Incluir encantados', quality: 'Incluir outras qualidades',
     natsLabel: 'Usar feed ao vivo NATS', natsConnected: 'conectado, {n}', natsDisconnected: 'desconectado',
     buyCity: 'Cidade de compra', sellCities: 'Cidades de venda', selectAll: 'Selecionar todas',
     sortProfit: 'Lucro (prata)', sortPct: 'Lucro (%)', sort: 'Ordenar por', search: 'Buscar',
@@ -187,20 +185,25 @@ const I18N = {
     catalogLoading: 'Backend carregando catálogo de itens, tentando de novo em alguns segundos...',
     ready: 'Pronto: {n} itens negociáveis no catálogo. Escolha os filtros e clique em Buscar.',
     searching: 'Buscando...', noneForFilters: 'Nenhum item para esses filtros.', chooseCities: 'Selecione ao menos uma cidade de venda.',
+    chooseCats: 'Selecione ao menos uma categoria.',
     noData: 'O backend não recebeu dados da API da AODP — tente de novo em instantes.',
     noOpp: 'Dados recebidos ({n} registros), mas nenhuma oportunidade de lucro com esses filtros.',
     noOppLive: 'Feed NATS ao vivo: {n} ordens no livro agora. Ainda não há oportunidade com esses filtros — o feed só acumula dados a partir do momento em que o backend conectou. Tente desmarcar "usar feed ao vivo" para a busca via API tradicional, mais completa.',
     found: '{n} oportunidades, comprando em {city} (sem taxa de mercado).',
     colItem: 'Item', colBuy: 'Compra', colSellAt: 'Vender em', colSell: 'Venda', colProfit: 'Lucro', colProfitPct: 'Lucro %',
+    colVolume: 'Vol. 24h', colAvgPrice: 'Preço médio 24h', noVolume: 'sem dados', updatedAt: 'atualizado em {date}',
     searchPlaceholder: 'Buscar um item...', searchQualityLabel: 'Incluir outras qualidades',
-    searchPrompt: 'Digite ao menos 2 letras para buscar um item.', searchNoResults: 'Nenhum item encontrado.',
+    searchNoResults: 'Nenhum item encontrado.',
     priceColCity: 'Cidade', priceColBuy: 'Comprar por (menor ordem de venda)', priceColSell: 'Vender por (maior ordem de compra)', priceColQuality: 'Qualidade',
     priceNoData: 'Sem dados de preço para este item nas cidades monitoradas.',
+    historyTitle: 'Volume de vendas', historyColCity: 'Cidade', historyColSold: 'Itens vendidos', historyColAvg: 'Preço médio',
+    historyNoData: 'Sem histórico de vendas para este período.', historyLoading: 'Carregando histórico...',
+    day1: '24h', day7: '7 dias', day30: '30 dias',
     note: 'Dados fornecidos voluntariamente por jogadores via Albion Online Data Project — podem estar desatualizados em itens/cidades com pouco movimento. Os valores são brutos, sem descontar a taxa de mercado (4%–8% dependendo do premium).'
   },
   en: {
     marketExplorer: 'Market Explorer', itemSearch: 'Item Search',
-    category: 'Category', tier: 'Tier', enchant: 'Include enchanted', quality: 'Include other qualities',
+    category: 'Category', enchant: 'Include enchanted', quality: 'Include other qualities',
     natsLabel: 'Use live NATS feed', natsConnected: 'connected, {n}', natsDisconnected: 'disconnected',
     buyCity: 'Buy city', sellCities: 'Sell cities', selectAll: 'Select all',
     sortProfit: 'Profit (silver)', sortPct: 'Profit (%)', sort: 'Sort by', search: 'Search',
@@ -208,15 +211,20 @@ const I18N = {
     catalogLoading: 'Backend is loading the item catalog, retrying in a few seconds...',
     ready: 'Ready: {n} tradeable items in catalog. Choose filters and click Search.',
     searching: 'Searching...', noneForFilters: 'No items match these filters.', chooseCities: 'Select at least one sell city.',
+    chooseCats: 'Select at least one category.',
     noData: 'The backend got no data back from the AODP API — try again shortly.',
     noOpp: 'Data received ({n} records), but no profitable opportunity with these filters.',
     noOppLive: 'Live NATS feed: {n} orders in the book right now. No opportunity yet with these filters — the feed only accumulates data from the moment the backend connected. Try unchecking "live NATS feed" for the regular API search, which has fuller coverage.',
     found: '{n} opportunities, buying in {city} (before market tax).',
     colItem: 'Item', colBuy: 'Buy', colSellAt: 'Sell at', colSell: 'Sell price', colProfit: 'Profit', colProfitPct: 'Profit %',
+    colVolume: '24h Vol.', colAvgPrice: '24h Avg Price', noVolume: 'no data', updatedAt: 'updated {date}',
     searchPlaceholder: 'Search for an item...', searchQualityLabel: 'Include other qualities',
-    searchPrompt: 'Type at least 2 letters to search for an item.', searchNoResults: 'No items found.',
+    searchNoResults: 'No items found.',
     priceColCity: 'City', priceColBuy: 'Buy for (lowest sell order)', priceColSell: 'Sell for (highest buy order)', priceColQuality: 'Quality',
     priceNoData: 'No price data for this item in the tracked cities.',
+    historyTitle: 'Sales volume', historyColCity: 'City', historyColSold: 'Items sold', historyColAvg: 'Average price',
+    historyNoData: 'No sale history for this period.', historyLoading: 'Loading history...',
+    day1: '24h', day7: '7 days', day30: '30 days',
     note: 'Prices are voluntarily shared by players via the Albion Online Data Project — may be stale for low-traffic items/cities. Values are gross, before market tax (4%-8% depending on premium).'
   }
 };
@@ -227,6 +235,7 @@ let lastOpportunities = [];
 let lastCategoryCounts = null;
 let searchDebounce = null;
 let selectedItem = null;
+let historyPeriod = 7;
 
 function t(key, vars) {
   let s = I18N[lang][key] || key;
@@ -234,8 +243,8 @@ function t(key, vars) {
   return s;
 }
 
-function itemIconUrl(id, quality) {
-  return 'https://render.albiononline.com/v1/item/' + encodeURIComponent(id) + '.png?size=64&quality=' + (quality || 1);
+function itemIconUrl(id, quality, size) {
+  return 'https://render.albiononline.com/v1/item/' + encodeURIComponent(id) + '.png?size=' + (size || 64) + '&quality=' + (quality || 1);
 }
 
 function buildSellCityCheckboxes() {
@@ -269,11 +278,44 @@ function getSelectedSellCities() {
   return Array.from(box.querySelectorAll('input[data-city]:checked')).map(function (cb) { return cb.dataset.city; });
 }
 
+function buildCategoryCheckboxes(counts) {
+  const box = document.getElementById('categoryBox');
+  const previouslyChecked = Array.from(box.querySelectorAll('input[data-cat]:checked')).map(function (cb) { return cb.dataset.cat; });
+  const firstRun = previouslyChecked.length === 0 && !box.querySelector('input[data-cat]');
+
+  box.innerHTML = '<label class="checkbox-row"><input type="checkbox" id="catAll" checked /> <strong id="lblSelectAllCat">' + t('selectAll') + '</strong></label><div class="divider"></div>';
+  CATEGORY_ORDER.forEach(function (cat) {
+    if (!counts[cat]) return;
+    const row = document.createElement('label');
+    row.className = 'checkbox-row';
+    const checked = firstRun || previouslyChecked.includes(cat);
+    row.innerHTML = '<input type="checkbox" id="cat_' + cat + '" data-cat="' + cat + '" ' + (checked ? 'checked' : '') + ' /> ' + CAT_LABELS[lang][cat] + ' (' + counts[cat] + ')';
+    box.appendChild(row);
+  });
+
+  const allBoxes = box.querySelectorAll('input[data-cat]');
+  document.getElementById('catAll').checked = Array.from(allBoxes).every(function (c) { return c.checked; });
+  document.getElementById('catAll').addEventListener('change', function () {
+    const checked = this.checked;
+    box.querySelectorAll('input[data-cat]').forEach(function (cb) { cb.checked = checked; });
+  });
+  allBoxes.forEach(function (cb) {
+    cb.addEventListener('change', function () {
+      const all = Array.from(box.querySelectorAll('input[data-cat]')).every(function (c) { return c.checked; });
+      document.getElementById('catAll').checked = all;
+    });
+  });
+}
+
+function getSelectedCategories() {
+  const box = document.getElementById('categoryBox');
+  return Array.from(box.querySelectorAll('input[data-cat]:checked')).map(function (cb) { return cb.dataset.cat; });
+}
+
 function applyLanguage() {
   document.getElementById('tabExplorer').textContent = t('marketExplorer');
   document.getElementById('tabSearch').textContent = t('itemSearch');
   document.getElementById('lblCategory').textContent = t('category');
-  document.getElementById('lblTier').textContent = t('tier');
   document.getElementById('lblEnchant').textContent = t('enchant');
   document.getElementById('lblQuality').textContent = t('quality');
   document.getElementById('lblNats').textContent = t('natsLabel');
@@ -287,21 +329,8 @@ function applyLanguage() {
   document.getElementById('ordenarPor').options[0].textContent = t('sortProfit');
   document.getElementById('ordenarPor').options[1].textContent = t('sortPct');
   buildSellCityCheckboxes();
-  if (lastOpportunities.length) renderTable(lastOpportunities); else populateCategorySelect(lastCategoryCounts);
-}
-
-function populateCategorySelect(counts) {
-  if (!counts) return;
-  lastCategoryCounts = counts;
-  const sel = document.getElementById('categoria');
-  const current = sel.value || 'all';
-  const order = ['resources','potions','food','weapons','armor','artifacts','bagcape','mounts','seeds','journals','furniture','fish','other'];
-  let html = '<option value="all">' + CAT_LABELS[lang].all + ' (' + counts.all + ')</option>';
-  order.forEach(function (c) {
-    if (counts[c]) html += '<option value="' + c + '">' + CAT_LABELS[lang][c] + ' (' + counts[c] + ')</option>';
-  });
-  sel.innerHTML = html;
-  sel.value = current;
+  if (lastCategoryCounts) buildCategoryCheckboxes(lastCategoryCounts);
+  if (lastOpportunities.length) renderTable(lastOpportunities);
 }
 
 document.getElementById('idioma').addEventListener('change', function () { lang = this.value; applyLanguage(); });
@@ -349,7 +378,8 @@ async function connectToBackend() {
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      populateCategorySelect(data.counts);
+      lastCategoryCounts = data.counts;
+      buildCategoryCheckboxes(data.counts);
       statusEl.textContent = t('ready', { n: data.counts.all });
       return;
     } catch (e) {
@@ -368,40 +398,53 @@ function tabelaHtml(headers, rows) {
   return html;
 }
 
+function formatDate(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(lang === 'pt' ? 'pt-BR' : 'en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
 function renderTable(opps) {
   const resultsEl = document.getElementById('results');
   const rows = opps.map(function (o) {
     const nameBase = lang === 'pt' ? o.pt : o.en;
     const qualLabel = QUALITY_LABELS[lang][o.quality];
     const label = o.quality > 1 ? nameBase + ' (' + qualLabel + ')' : nameBase;
+    const buyDate = formatDate(o.buyCostDate);
+    const sellDate = formatDate(o.sellPriceDate);
+    const volCell = o.volume24h
+      ? o.volume24h.qty.toLocaleString() + ' <span style="color:var(--text-secondary); font-size:12px;">(' + o.volume24h.avgPrice.toLocaleString() + ')</span>'
+      : '<span style="color:var(--text-secondary);">' + t('noVolume') + '</span>';
     return '<td class="icon-cell"><img src="' + itemIconUrl(o.id, o.quality) + '" loading="lazy" onerror="this.style.display=\'none\'" alt="" /></td>' +
       '<td>' + label + '</td>' +
-      '<td class="num">' + o.buyCost.toLocaleString() + '</td>' +
+      '<td class="num">' + o.buyCost.toLocaleString() + (buyDate ? '<br><span style="color:var(--text-secondary); font-size:11px;">' + buyDate + '</span>' : '') + '</td>' +
       '<td>' + o.destCity + '</td>' +
-      '<td class="num">' + o.sellPrice.toLocaleString() + '</td>' +
+      '<td class="num">' + o.sellPrice.toLocaleString() + (sellDate ? '<br><span style="color:var(--text-secondary); font-size:11px;">' + sellDate + '</span>' : '') + '</td>' +
       '<td class="num profit">+' + o.profit.toLocaleString() + '</td>' +
-      '<td class="num profit">' + o.pct.toFixed(1) + '%</td>';
+      '<td class="num profit">' + o.pct.toFixed(1) + '%</td>' +
+      '<td class="num">' + volCell + '</td>';
   });
   resultsEl.innerHTML = tabelaHtml([
     { label: '' }, { label: t('colItem') }, { label: t('colBuy'), num: true }, { label: t('colSellAt') },
-    { label: t('colSell'), num: true }, { label: t('colProfit'), num: true }, { label: t('colProfitPct'), num: true }
+    { label: t('colSell'), num: true }, { label: t('colProfit'), num: true }, { label: t('colProfitPct'), num: true },
+    { label: t('colVolume'), num: true }
   ], rows);
 }
 
 document.getElementById('goBtn').addEventListener('click', async function () {
-  const categoria = document.getElementById('categoria').value;
-  const tierMin = document.getElementById('tierMin').value;
-  const tierMax = document.getElementById('tierMax').value;
   const includeEnchanted = document.getElementById('encantados').checked;
   const includeQualities = document.getElementById('qualidades').checked;
   const cidadeCompra = document.getElementById('cidadeCompra').value;
   const sellCities = getSelectedSellCities();
+  const categories = getSelectedCategories();
   const sortMode = document.getElementById('ordenarPor').value;
   const statusEl = document.getElementById('status');
   const resultsEl = document.getElementById('results');
   const btn = document.getElementById('goBtn');
 
   if (sellCities.length === 0) { statusEl.textContent = t('chooseCities'); return; }
+  if (categories.length === 0) { statusEl.textContent = t('chooseCats'); return; }
 
   btn.disabled = true;
   resultsEl.innerHTML = '';
@@ -409,8 +452,9 @@ document.getElementById('goBtn').addEventListener('click', async function () {
   statusEl.textContent = t('searching');
 
   const sellAllChecked = document.getElementById('sellAll').checked;
+  const catAllChecked = document.getElementById('catAll').checked;
   const params = new URLSearchParams({
-    category: categoria, tierMin: tierMin, tierMax: tierMax,
+    categories: catAllChecked ? 'ALL' : categories.join(','),
     enchanted: includeEnchanted, qualities: includeQualities,
     buyCity: cidadeCompra, sellCities: sellAllChecked ? 'ALL' : sellCities.join(','),
     region: region
@@ -488,48 +532,111 @@ async function selectItem(id, results) {
   selectedItem = results.find(function (r) { return r.id === id; }) || null;
   searchDropdown.style.display = 'none';
   searchInput.value = '';
-  await runItemPriceSearch();
+  await renderItemSearchResult();
 }
 
-document.getElementById('searchQualities').addEventListener('change', runItemPriceSearch);
+document.getElementById('searchQualities').addEventListener('change', function () { renderItemSearchResult(); });
 
-async function runItemPriceSearch() {
+function itemHeaderHtml() {
+  const name = lang === 'pt' ? selectedItem.pt : selectedItem.en;
+  return '<div class="selected-item-header"><img src="' + itemIconUrl(selectedItem.id, 1, 217) + '" onerror="this.style.display=\'none\'" alt="" />' +
+    '<h2>T' + selectedItem.tier + (selectedItem.ench ? '.' + selectedItem.ench : '') + ' ' + name + '</h2></div>';
+}
+
+async function renderItemSearchResult() {
   if (!selectedItem) return;
   const area = document.getElementById('searchResultArea');
   const includeQualities = document.getElementById('searchQualities').checked;
-  const name = lang === 'pt' ? selectedItem.pt : selectedItem.en;
-  area.innerHTML = '<div class="selected-item-header"><img src="' + itemIconUrl(selectedItem.id, 1) + '" onerror="this.style.display=\'none\'" alt="" />' +
-    '<h2>T' + selectedItem.tier + (selectedItem.ench ? '.' + selectedItem.ench : '') + ' ' + name + '</h2></div>' +
-    '<p class="status">' + t('searching') + '</p>';
+
+  area.innerHTML = itemHeaderHtml() + '<p class="status">' + t('searching') + '</p>';
 
   const params = new URLSearchParams({ id: selectedItem.id, region: region, qualities: includeQualities });
   try {
     const res = await fetch('/api/item-prices?' + params.toString());
     const data = await res.json();
+    let priceHtml;
     if (data.status !== 'ok' || !data.prices.length) {
-      area.innerHTML = '<div class="selected-item-header"><img src="' + itemIconUrl(selectedItem.id, 1) + '" onerror="this.style.display=\'none\'" alt="" />' +
-        '<h2>T' + selectedItem.tier + (selectedItem.ench ? '.' + selectedItem.ench : '') + ' ' + name + '</h2></div>' +
-        '<p class="status">' + t('priceNoData') + '</p>';
+      priceHtml = '<p class="status">' + t('priceNoData') + '</p>';
+    } else {
+      const rows = data.prices
+        .filter(function (p) { return p.sell_price_min > 0 || p.buy_price_max > 0; })
+        .sort(function (a, b) { return a.city.localeCompare(b.city) || a.quality - b.quality; })
+        .map(function (p) {
+          const qualLabel = QUALITY_LABELS[lang][p.quality] || p.quality;
+          const buyDate = formatDate(p.sell_price_min_date);
+          const sellDate = formatDate(p.buy_price_max_date);
+          return '<td>' + p.city + '</td>' +
+            '<td>' + qualLabel + '</td>' +
+            '<td class="num">' + (p.sell_price_min ? p.sell_price_min.toLocaleString() : '—') + (buyDate ? '<br><span style="color:var(--text-secondary); font-size:11px;">' + buyDate + '</span>' : '') + '</td>' +
+            '<td class="num">' + (p.buy_price_max ? p.buy_price_max.toLocaleString() : '—') + (sellDate ? '<br><span style="color:var(--text-secondary); font-size:11px;">' + sellDate + '</span>' : '') + '</td>';
+        });
+      priceHtml = tabelaHtml([
+        { label: t('priceColCity') }, { label: t('priceColQuality') },
+        { label: t('priceColBuy'), num: true }, { label: t('priceColSell'), num: true }
+      ], rows);
+    }
+
+    const periodButtons = '<div class="period-buttons">' + PERIODS.map(function (d) {
+      return '<button class="period-btn' + (d === historyPeriod ? ' active' : '') + '" data-days="' + d + '">' + t('day' + d) + '</button>';
+    }).join('') + '</div>';
+
+    area.innerHTML = itemHeaderHtml() + priceHtml +
+      '<div class="section-title">' + t('historyTitle') + '</div>' +
+      periodButtons + '<div id="historyArea"><p class="status">' + t('historyLoading') + '</p></div>';
+
+    area.querySelectorAll('.period-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        historyPeriod = parseInt(this.dataset.days, 10);
+        area.querySelectorAll('.period-btn').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        loadHistory();
+      });
+    });
+    loadHistory();
+  } catch (e) {
+    area.innerHTML = itemHeaderHtml() + '<p class="status">' + t('backendError') + '</p>';
+  }
+}
+
+async function loadHistory() {
+  const historyArea = document.getElementById('historyArea');
+  if (!historyArea || !selectedItem) return;
+  historyArea.innerHTML = '<p class="status">' + t('historyLoading') + '</p>';
+
+  const params = new URLSearchParams({ id: selectedItem.id, region: region, days: historyPeriod });
+  try {
+    const res = await fetch('/api/item-history?' + params.toString());
+    const data = await res.json();
+    if (data.status !== 'ok' || !data.history.length) {
+      historyArea.innerHTML = '<p class="status">' + t('historyNoData') + '</p>';
       return;
     }
-    const rows = data.prices
-      .filter(function (p) { return p.sell_price_min > 0 || p.buy_price_max > 0; })
-      .sort(function (a, b) { return a.city.localeCompare(b.city) || a.quality - b.quality; })
-      .map(function (p) {
-        const qualLabel = QUALITY_LABELS[lang][p.quality] || p.quality;
-        return '<td>' + p.city + '</td>' +
-          '<td>' + qualLabel + '</td>' +
-          '<td class="num">' + (p.sell_price_min ? p.sell_price_min.toLocaleString() : '—') + '</td>' +
-          '<td class="num">' + (p.buy_price_max ? p.buy_price_max.toLocaleString() : '—') + '</td>';
+    const byCity = {};
+    data.history.forEach(function (entry) {
+      if (!entry.data || !entry.data.length) return;
+      let totalCount = 0;
+      let weightedPriceSum = 0;
+      entry.data.forEach(function (d) {
+        totalCount += d.item_count;
+        weightedPriceSum += d.avg_price * d.item_count;
       });
-    const table = tabelaHtml([
-      { label: t('priceColCity') }, { label: t('priceColQuality') },
-      { label: t('priceColBuy'), num: true }, { label: t('priceColSell'), num: true }
+      if (totalCount === 0) return;
+      byCity[entry.location] = { count: totalCount, avgPrice: Math.round(weightedPriceSum / totalCount) };
+    });
+    const cities = Object.keys(byCity);
+    if (cities.length === 0) {
+      historyArea.innerHTML = '<p class="status">' + t('historyNoData') + '</p>';
+      return;
+    }
+    const rows = cities.sort().map(function (city) {
+      const c = byCity[city];
+      return '<td>' + city + '</td><td class="num">' + c.count.toLocaleString() + '</td><td class="num">' + c.avgPrice.toLocaleString() + '</td>';
+    });
+    historyArea.innerHTML = tabelaHtml([
+      { label: t('historyColCity') }, { label: t('historyColSold'), num: true }, { label: t('historyColAvg'), num: true }
     ], rows);
-    area.innerHTML = '<div class="selected-item-header"><img src="' + itemIconUrl(selectedItem.id, 1) + '" onerror="this.style.display=\'none\'" alt="" />' +
-      '<h2>T' + selectedItem.tier + (selectedItem.ench ? '.' + selectedItem.ench : '') + ' ' + name + '</h2></div>' + table;
   } catch (e) {
-    area.innerHTML = '<p class="status">' + t('backendError') + '</p>';
+    historyArea.innerHTML = '<p class="status">' + t('backendError') + '</p>';
   }
 }
 
