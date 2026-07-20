@@ -70,6 +70,27 @@
   .period-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .section-title { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
 
+  .craft-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-bottom: 24px; }
+  .craft-pick { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 10px;
+    border: 0.5px solid var(--border); background: var(--surface); cursor: pointer; text-align: center; }
+  .craft-pick:hover { background: var(--surface-2); }
+  .craft-pick.active { border-color: var(--accent); background: var(--surface-2); }
+  .craft-pick img { width: 40px; height: 40px; border-radius: 6px; background: var(--surface-2); }
+  .craft-pick span { font-size: 11px; color: var(--text-secondary); line-height: 1.2; }
+  .craft-tier-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .craft-tier-row select { width: auto; min-width: 90px; }
+  .craft-card { border: 0.5px solid var(--border); border-radius: 12px; padding: 20px; background: var(--surface); }
+  .craft-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .craft-card-header img { width: 56px; height: 56px; border-radius: 8px; background: var(--surface-2); }
+  .craft-card-header h3 { margin: 0 0 4px; font-size: 18px; }
+  .craft-card-header .sub { font-size: 13px; color: var(--text-secondary); }
+  .craft-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }
+  .craft-stat { background: var(--surface-2); border-radius: 8px; padding: 12px; }
+  .craft-stat .label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 4px; }
+  .craft-stat .value { font-size: 17px; font-weight: 600; }
+  .craft-resource-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; }
+  .craft-resource-row img { width: 28px; height: 28px; border-radius: 4px; background: var(--surface-2); }
+
   @media (max-width: 800px) {
     .layout { grid-template-columns: 1fr; }
     .sidebar { position: static; border-right: none; border-bottom: 0.5px solid var(--border); height: auto; overflow-y: visible; }
@@ -84,7 +105,8 @@
     <div class="tabs">
       <button class="tab-btn active" id="tabExplorer">Market Explorer</button>
       <button class="tab-btn" id="tabSearch">Item Search</button>
-      <button class="tab-btn" id="tabCraft">Crafting Guide</button>
+      <button class="tab-btn" id="tabCraft">Craft</button>
+      <button class="tab-btn" id="tabIslands">Islands</button>
     </div>
   </div>
   <div class="topbar-right">
@@ -113,6 +135,7 @@
     <div class="field">
       <label class="checkbox-row"><input type="checkbox" id="encantados" /> <span id="lblEnchant">Include enchanted</span></label>
       <label class="checkbox-row"><input type="checkbox" id="qualidades" /> <span id="lblQuality">Include other qualities</span></label>
+      <label class="checkbox-row"><input type="checkbox" id="usarNats" /> <span id="lblNats">Use live NATS feed (slower, more current)</span></label>
       <span id="natsIndicator" style="color:var(--text-secondary); font-size:12px; display:block; padding:4px 0;"></span>
     </div>
     <div class="divider"></div>
@@ -157,13 +180,28 @@
   <div id="searchResultArea"></div>
 </div>
 
-<!-- ===== Crafting Guide view ===== -->
-<div class="main" id="viewCraft" style="display:none; max-width: 900px; margin: 0 auto;">
-  <p id="craftIntro" style="color:var(--text-secondary); font-size:14px; margin-bottom:20px;"></p>
+<!-- ===== Craft view ===== -->
+<div class="main" id="viewCraft" style="display:none; max-width: 980px; margin: 0 auto;">
   <div class="section-title" id="craftCityTitle">City bonuses</div>
   <div id="craftCityArea"></div>
-  <div class="section-title" id="craftRecipesTitle">T4 recipes</div>
-  <div id="craftRecipesArea"></div>
+
+  <div class="section-title" id="craftPickerTitle">Recipe lookup</div>
+  <div id="craftBreadcrumb" style="margin-bottom:12px; font-size:13px; color:var(--text-secondary);"></div>
+  <div class="craft-picker-grid" id="craftPickerGrid"></div>
+
+  <div id="craftResultArea"></div>
+</div>
+
+<!-- ===== Islands view ===== -->
+<div class="main" id="viewIslands" style="display:none; max-width: 980px; margin: 0 auto;">
+  <div class="section-title" id="islandsAboutTitle">About islands</div>
+  <div id="islandsAboutArea" style="font-size:14px; color:var(--text-secondary); line-height:1.7; margin-bottom:24px;"></div>
+
+  <div class="section-title" id="farmCityTitle">Farming &amp; animal bonuses</div>
+  <div id="farmCityArea"></div>
+
+  <div class="section-title" id="islandCostTitle">Island upgrade cost</div>
+  <div id="islandCostArea"></div>
 </div>
 
 <script>
@@ -188,11 +226,14 @@ const QUALITY_LABELS = {
 
 const I18N = {
   pt: {
-    marketExplorer: 'Explorador de mercado', itemSearch: 'Buscar item', craftingGuide: 'Guia de crafting',
-    craftIntro: 'Receitas de T4 — subindo ou descendo de tier, a quantidade de recurso continua a mesma, só o tier do recurso muda junto (por exemplo, uma T6 Espada usa a mesma quantidade de Barra de Metal T6 que a T4 usa de Barra de Metal T4). Cidade = onde você ganha o bônus de +15% de especialidade para craftar aquele item.',
-    craftCityTitle: 'Bônus por cidade', craftRecipesTitle: 'Receitas T4',
-    craftColCity: 'Cidade', craftColRefine: 'Bônus de refino', craftColGear: 'Bônus de craft de equipamento',
-    craftColItem: 'Item', craftColResources: 'Recursos (T4)',
+    marketExplorer: 'Explorador de mercado', itemSearch: 'Buscar item', craftingGuide: 'Craft', islandsTab: 'Ilhas',
+    craftCityTitle: 'Bônus de cidade (equipamento)', craftPickerTitle: 'Buscar receita', craftAllGroups: 'Todos os tipos',
+    craftColCity: 'Cidade', craftColRefine: 'Bônus de refino', craftColGear: 'Bônus de craft', craftTier: 'Tier:',
+    farmCityTitle: 'Bônus de fazenda e criação de animais', farmColCrop: 'Cultura', farmColHerb: 'Erva', farmColAnimal: 'Animal',
+    islandsAboutTitle: 'Sobre as ilhas', islandCostTitle: 'Custo de compra e evolução',
+    islandFirstPersonal: 'Primeira ilha pessoal (desconto de primeira vez)', islandRegularPersonal: 'Ilha pessoal (compras seguintes)', islandGuild: 'Ilha de guilda',
+    islandColTier: 'Tier', islandColCost: 'Custo dessa evolução', islandColTotal: 'Custo acumulado',
+    islandsAbout: 'Toda conta tem acesso a uma ilha pessoal gratuita na cidade natal, e pode comprar ilhas adicionais em outras cidades (até um total de 3 ilhas pessoais por conta). Ilhas de guilda são compradas pela guilda e ficam disponíveis para os membros. Preços aumentam a cada tier de evolução da ilha (T1 a T8), e o valor pago é acumulativo — cada tier soma ao custo total já investido. Valores abaixo são uma referência da comunidade e podem mudar com atualizações de balanceamento do jogo.',
     category: 'Categoria', enchant: 'Incluir encantados', quality: 'Incluir outras qualidades',
     natsLabel: 'Usar feed ao vivo NATS', natsConnected: 'conectado, {n}', natsDisconnected: 'desconectado',
     buyCity: 'Cidade de compra', sellCities: 'Cidades de venda', selectAll: 'Selecionar todas',
@@ -210,18 +251,21 @@ const I18N = {
     searchPlaceholder: 'Buscar um item...', searchQualityLabel: 'Incluir outras qualidades',
     searchNoResults: 'Nenhum item encontrado.',
     priceColCity: 'Cidade', priceColBuy: 'Comprar por (menor ordem de venda)', priceColSell: 'Vender por (maior ordem de compra)', priceColQuality: 'Qualidade',
-    priceNoData: 'Sem dados de preço para este item nas cidades monitoradas.',
+    priceNoData: 'Sem dados de preço para este item nas cidades monitoradas.', buyOnly: 'só compra',
     historyTitle: 'Volume de vendas', historyColCity: 'Cidade', historyColSold: 'Itens vendidos', historyColAvg: 'Preço médio',
     historyNoData: 'Sem histórico de vendas para este período.', historyLoading: 'Carregando histórico...',
     day1: '24h', day7: '7 dias', day30: '30 dias',
     note: 'Dados fornecidos voluntariamente por jogadores via Albion Online Data Project — podem estar desatualizados em itens/cidades com pouco movimento. Os valores são brutos, sem descontar a taxa de mercado (4%–8% dependendo do premium).'
   },
   en: {
-    marketExplorer: 'Market Explorer', itemSearch: 'Item Search', craftingGuide: 'Crafting Guide',
-    craftIntro: 'T4 recipes shown — going up or down a tier keeps the same resource quantity, only the resource tier changes to match (e.g. a T6 Sword uses the same amount of T6 Metal Bar that a T4 one uses of T4 Metal Bar). City = where you get the +15% specialty bonus for crafting that item.',
-    craftCityTitle: 'City bonuses', craftRecipesTitle: 'T4 recipes',
-    craftColCity: 'City', craftColRefine: 'Refining bonus', craftColGear: 'Gear crafting bonus',
-    craftColItem: 'Item', craftColResources: 'Resources (T4)',
+    marketExplorer: 'Market Explorer', itemSearch: 'Item Search', craftingGuide: 'Craft', islandsTab: 'Islands',
+    craftCityTitle: 'City bonuses (gear)', craftPickerTitle: 'Recipe lookup', craftAllGroups: 'All types',
+    craftColCity: 'City', craftColRefine: 'Refining bonus', craftColGear: 'Crafting bonus', craftTier: 'Tier:',
+    farmCityTitle: 'Farming & animal husbandry bonuses', farmColCrop: 'Crop', farmColHerb: 'Herb', farmColAnimal: 'Animal',
+    islandsAboutTitle: 'About islands', islandCostTitle: 'Purchase & upgrade cost',
+    islandFirstPersonal: 'First personal island (first-time discount)', islandRegularPersonal: 'Personal island (later purchases)', islandGuild: 'Guild island',
+    islandColTier: 'Tier', islandColCost: 'Cost of this upgrade', islandColTotal: 'Cumulative cost',
+    islandsAbout: 'Every account gets one free personal island in its home city, and can buy additional islands in other cities (up to 3 personal islands per account total). Guild islands are bought by the guild and made available to its members. Prices increase with each island tier upgrade (T1 through T8), and the cost is cumulative — each tier adds to the total already invested. Figures below are a community reference and may change with game balance updates.',
     category: 'Category', enchant: 'Include enchanted', quality: 'Include other qualities',
     natsLabel: 'Use live NATS feed', natsConnected: 'connected, {n}', natsDisconnected: 'disconnected',
     buyCity: 'Buy city', sellCities: 'Sell cities', selectAll: 'Select all',
@@ -239,7 +283,7 @@ const I18N = {
     searchPlaceholder: 'Search for an item...', searchQualityLabel: 'Include other qualities',
     searchNoResults: 'No items found.',
     priceColCity: 'City', priceColBuy: 'Buy for (lowest sell order)', priceColSell: 'Sell for (highest buy order)', priceColQuality: 'Quality',
-    priceNoData: 'No price data for this item in the tracked cities.',
+    priceNoData: 'No price data for this item in the tracked cities.', buyOnly: 'buy only',
     historyTitle: 'Sales volume', historyColCity: 'City', historyColSold: 'Items sold', historyColAvg: 'Average price',
     historyNoData: 'No sale history for this period.', historyLoading: 'Loading history...',
     day1: '24h', day7: '7 days', day30: '30 days',
@@ -247,60 +291,11 @@ const I18N = {
   }
 };
 
-const RESOURCE_NAME = {
-  pt: { METALBAR: 'Barra de metal', PLANKS: 'Tábuas', CLOTH: 'Tecido', LEATHER: 'Couro' },
-  en: { METALBAR: 'Metal Bar', PLANKS: 'Planks', CLOTH: 'Cloth', LEATHER: 'Leather' }
-};
-
-// Real crafting requirements pulled directly from the game's own items.xml
-// (ao-data/ao-bin-dumps). Quantities are identical at every tier from T3 to
-// T8 — only the tier of the resource itself changes to match (confirmed by
-// checking T3 through T8 for several items). City = the royal city that
-// gives the +15% crafting specialty bonus for that item, per craftingcategory.
-const CRAFT_RECIPES = [
-  { id: 'T4_MAIN_SWORD', en: 'Sword', pt: 'Espada', res: [['METALBAR', 16], ['LEATHER', 8]], city: 'Lymhurst' },
-  { id: 'T4_MAIN_AXE', en: 'Axe', pt: 'Machado', res: [['PLANKS', 8], ['METALBAR', 16]], city: 'Martlock' },
-  { id: 'T4_MAIN_MACE', en: 'Mace', pt: 'Maça', res: [['METALBAR', 16], ['CLOTH', 8]], city: 'Thetford' },
-  { id: 'T4_MAIN_HAMMER', en: 'Hammer', pt: 'Martelo', res: [['METALBAR', 24]], city: 'Fort Sterling' },
-  { id: 'T4_MAIN_DAGGER', en: 'Dagger', pt: 'Adaga', res: [['METALBAR', 12], ['LEATHER', 12]], city: 'Bridgewatch' },
-  { id: 'T4_MAIN_SPEAR', en: 'Spear', pt: 'Lança', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Fort Sterling' },
-  { id: 'T4_MAIN_ARCANESTAFF', en: 'Arcane Staff', pt: 'Cajado Arcano', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Lymhurst' },
-  { id: 'T4_MAIN_CURSEDSTAFF', en: 'Cursed Staff', pt: 'Cajado Amaldiçoado', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Bridgewatch' },
-  { id: 'T4_MAIN_FIRESTAFF', en: 'Fire Staff', pt: 'Cajado de Fogo', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Thetford' },
-  { id: 'T4_MAIN_FROSTSTAFF', en: 'Frost Staff', pt: 'Cajado de Gelo', res: [['PLANKS', 16], ['METALBAR', 8]], city: 'Martlock' },
-  { id: 'T4_MAIN_HOLYSTAFF', en: 'Holy Staff', pt: 'Cajado Sagrado', res: [['PLANKS', 16], ['CLOTH', 8]], city: 'Fort Sterling' },
-  { id: 'T4_MAIN_NATURESTAFF', en: 'Nature Staff', pt: 'Cajado da Natureza', res: [['PLANKS', 16], ['CLOTH', 8]], city: 'Thetford' },
-  { id: 'T4_2H_BOW', en: 'Bow', pt: 'Arco', res: [['PLANKS', 32]], city: 'Lymhurst' },
-  { id: 'T4_2H_CROSSBOW', en: 'Crossbow', pt: 'Besta', res: [['PLANKS', 20], ['METALBAR', 12]], city: 'Bridgewatch' },
-  { id: 'T4_2H_HAMMER', en: 'Great Hammer', pt: 'Martelo Grande', res: [['METALBAR', 20], ['CLOTH', 12]], city: 'Fort Sterling' },
-  { id: 'T4_2H_AXE', en: 'Battleaxe', pt: 'Machado de Batalha', res: [['PLANKS', 12], ['METALBAR', 20]], city: 'Martlock' },
-  { id: 'T4_2H_CLAYMORE', en: 'Claymore', pt: 'Claymore', res: [['METALBAR', 20], ['LEATHER', 12]], city: 'Lymhurst' },
-  { id: 'T4_2H_SPEAR', en: 'Great Spear', pt: 'Lança Grande', res: [['PLANKS', 20], ['METALBAR', 12]], city: 'Fort Sterling' },
-  { id: 'T4_2H_QUARTERSTAFF', en: 'Quarterstaff', pt: 'Bo', res: [['METALBAR', 12], ['LEATHER', 20]], city: 'Martlock' },
-  { id: 'T4_2H_FIRESTAFF', en: 'Great Fire Staff', pt: 'Cajado de Fogo Grande', res: [['PLANKS', 20], ['METALBAR', 12]], city: 'Thetford' },
-  { id: 'T4_2H_HOLYSTAFF', en: 'Great Holy Staff', pt: 'Cajado Sagrado Grande', res: [['PLANKS', 20], ['CLOTH', 12]], city: 'Fort Sterling' },
-  { id: 'T4_2H_NATURESTAFF', en: 'Great Nature Staff', pt: 'Cajado da Natureza Grande', res: [['PLANKS', 20], ['CLOTH', 12]], city: 'Thetford' },
-  { id: 'T4_2H_FROSTSTAFF', en: 'Great Frost Staff', pt: 'Cajado de Gelo Grande', res: [['PLANKS', 20], ['METALBAR', 12]], city: 'Martlock' },
-  { id: 'T4_OFF_SHIELD', en: 'Shield', pt: 'Escudo', res: [['PLANKS', 4], ['METALBAR', 4]], city: 'Martlock' },
-  { id: 'T4_OFF_BOOK', en: 'Tome', pt: 'Tomo', res: [['CLOTH', 4], ['LEATHER', 4]], city: 'Martlock' },
-  { id: 'T4_OFF_TORCH', en: 'Torch', pt: 'Tocha', res: [['PLANKS', 4], ['CLOTH', 4]], city: 'Martlock' },
-  { id: 'T4_HEAD_PLATE_SET1', en: 'Plate Helmet', pt: 'Elmo de Placas', res: [['METALBAR', 8]], city: 'Fort Sterling' },
-  { id: 'T4_ARMOR_PLATE_SET1', en: 'Plate Armor', pt: 'Armadura de Placas', res: [['METALBAR', 16]], city: 'Bridgewatch' },
-  { id: 'T4_SHOES_PLATE_SET1', en: 'Plate Boots', pt: 'Botas de Placas', res: [['METALBAR', 8]], city: 'Martlock' },
-  { id: 'T4_HEAD_LEATHER_SET1', en: 'Leather Hood', pt: 'Capuz de Couro', res: [['LEATHER', 8]], city: 'Lymhurst' },
-  { id: 'T4_ARMOR_LEATHER_SET1', en: 'Leather Armor', pt: 'Armadura de Couro', res: [['LEATHER', 16]], city: 'Thetford' },
-  { id: 'T4_SHOES_LEATHER_SET1', en: 'Leather Shoes', pt: 'Sapatos de Couro', res: [['LEATHER', 8]], city: 'Lymhurst' },
-  { id: 'T4_HEAD_CLOTH_SET1', en: 'Cloth Hood', pt: 'Capuz de Tecido', res: [['CLOTH', 8]], city: 'Thetford' },
-  { id: 'T4_ARMOR_CLOTH_SET1', en: 'Cloth Robe', pt: 'Vestimenta de Tecido', res: [['CLOTH', 16]], city: 'Fort Sterling' },
-  { id: 'T4_SHOES_CLOTH_SET1', en: 'Cloth Sandals', pt: 'Sandálias de Tecido', res: [['CLOTH', 8]], city: 'Bridgewatch' },
-  { id: 'T4_BAG', en: 'Bag', pt: 'Bolsa', res: [['CLOTH', 8], ['LEATHER', 8]], city: 'Brecilien' },
-  { id: 'T4_CAPE', en: 'Cape', pt: 'Capa', res: [['CLOTH', 4], ['LEATHER', 4]], city: 'Brecilien' }
-];
-
-// Refining and gear crafting bonuses per royal city (+15% specialty bonus).
-// Note: the bonus city for refining a resource does NOT match the resource
-// that naturally spawns around that city — this cross-wiring is intentional
-// game design, forcing resources to be transported between cities.
+// Refining and gear crafting bonuses per royal city (+15% specialty bonus,
+// confirmed by multiple independent sources). Note: the bonus city for
+// refining a resource does NOT match the resource that naturally spawns
+// around that city — this cross-wiring is intentional game design, forcing
+// resources to be transported between cities.
 const CITY_BONUSES = [
   { city: 'Fort Sterling', refine: { en: 'Wood → Planks', pt: 'Madeira → Tábuas' }, gear: { en: 'Hammer, Spear, Holy Staff, Plate Helmet, Cloth Armor', pt: 'Martelo, Lança, Cajado Sagrado, Elmo de Placas, Armadura de Tecido' } },
   { city: 'Lymhurst', refine: { en: 'Fiber → Cloth', pt: 'Fibra → Tecido' }, gear: { en: 'Sword, Bow, Arcane Staff, Leather Helmet, Leather Shoes', pt: 'Espada, Arco, Cajado Arcano, Capuz de Couro, Sapatos de Couro' } },
@@ -311,31 +306,189 @@ const CITY_BONUSES = [
   { city: 'Brecilien', refine: { en: 'Refines everything, no single specialty', pt: 'Refina tudo, sem especialidade única' }, gear: { en: 'Capes, Bags, Potions', pt: 'Capas, Bolsas, Poções' } }
 ];
 
+// Island farming/animal husbandry bonuses (+10% yield), introduced in the
+// Wild Blood update. Each city gets a bonus crop, herb and farm animal, plus
+// one extra bonus in one of those categories (which is why some cells list
+// two items). Caerleon gets 3 herbs instead (no crop/animal bonus), and
+// Brecilien gets all crops instead of a single one.
+const FARM_BONUSES = [
+  { city: 'Lymhurst', crop: 'Carrot, Pumpkin', herb: 'Crenellated Burdock', animal: { en: 'Goose (meat & eggs)', pt: 'Ganso (carne e ovos)' } },
+  { city: 'Bridgewatch', crop: 'Bean, Corn', herb: 'Dragon Teasel', animal: { en: 'Goat (meat & milk)', pt: 'Cabra (carne e leite)' } },
+  { city: 'Martlock', crop: 'Wheat, Potato', herb: 'Elusive Foxglove', animal: { en: 'Cow (meat & milk)', pt: 'Vaca (carne e leite)' } },
+  { city: 'Thetford', crop: 'Cabbage', herb: 'Arcane Agaric, Firetouched Mullein', animal: { en: 'Pork (meat)', pt: 'Porco (carne)' } },
+  { city: 'Fort Sterling', crop: 'Turnip', herb: 'Ghoul Yarrow', animal: { en: 'Chicken (meat & eggs), Sheep (meat & milk)', pt: 'Galinha (carne e ovos), Ovelha (carne e leite)' } },
+  { city: 'Caerleon', crop: { en: '—', pt: '—' }, herb: 'Brightleaf Comfrey, Dragon Teasel, Firetouched Mullein', animal: { en: '—', pt: '—' } },
+  { city: 'Brecilien', crop: { en: 'All crops', pt: 'Todas as culturas' }, herb: { en: '—', pt: '—' }, animal: { en: '—', pt: '—' } }
+];
+
+// Island upgrade costs — Personal (first island discount + regular) and
+// Guild — pulled from a community-maintained cost table (albiononlinegrind.com),
+// current as of the site's last update. Prices are set by the game and can
+// change with balance patches, so treat as a reference, not gospel.
+const ISLAND_COSTS = {
+  firstPersonal: [
+    [1, 20000, 20000], [2, 500000, 520000], [3, 1125000, 1654000],
+    [4, 1312500, 2957500], [5, 1500000, 4457500], [6, 2000000, 6457500]
+  ],
+  personal: [
+    [1, 1000000, 1000000], [2, 2500000, 3500000], [3, 4000000, 7500000],
+    [4, 5000000, 12500000], [5, 6000000, 18500000], [6, 8000000, 26500000]
+  ],
+  guild: [
+    [1, 5000000, 5000000], [2, 3750000, 8750000], [3, 4000000, 12750000],
+    [4, 5000000, 17750000], [5, 6000000, 23750000], [6, 8000000, 31750000]
+  ]
+};
+
+let CRAFT_GROUPS_DATA = [];
+let pickerLevel = 'group'; // 'group' | 'variant'
+let selectedGroup = null;
+let selectedFamily = null;
+
+function textOf(v) { return typeof v === 'string' ? v : v[lang]; }
+
+async function loadCraftFamilies() {
+  try {
+    const res = await fetch('/api/craft-families');
+    const data = await res.json();
+    CRAFT_GROUPS_DATA = data.groups || [];
+  } catch (e) { CRAFT_GROUPS_DATA = []; }
+}
+
+function renderCraftBreadcrumb() {
+  const el = document.getElementById('craftBreadcrumb');
+  if (pickerLevel === 'group') { el.innerHTML = ''; return; }
+  const group = CRAFT_GROUPS_DATA.find(function (g) { return g.group === selectedGroup; });
+  const groupName = group ? group.label[lang] : '';
+  el.innerHTML = '<a href="#" id="breadcrumbBack" style="color:var(--accent); text-decoration:none;">← ' + t('craftAllGroups') + '</a>' +
+    (groupName ? ' / ' + groupName : '');
+  const back = document.getElementById('breadcrumbBack');
+  if (back) back.addEventListener('click', function (e) { e.preventDefault(); pickerLevel = 'group'; selectedGroup = null; document.getElementById('craftResultArea').innerHTML = ''; renderCraftPicker(); });
+}
+
+function renderCraftPicker() {
+  renderCraftBreadcrumb();
+  const grid = document.getElementById('craftPickerGrid');
+
+  if (pickerLevel === 'group') {
+    grid.innerHTML = CRAFT_GROUPS_DATA.map(function (g) {
+      const rep = g.variants[0];
+      const name = g.label[lang];
+      return '<div class="craft-pick" data-group="' + g.group + '">' +
+        '<img src="' + itemIconUrl('T4_' + rep.family, 1) + '" loading="lazy" onerror="this.style.display=\'none\'" alt="" />' +
+        '<span>' + name + '</span></div>';
+    }).join('');
+    grid.querySelectorAll('.craft-pick').forEach(function (el) {
+      el.addEventListener('click', function () {
+        selectedGroup = this.dataset.group;
+        pickerLevel = 'variant';
+        document.getElementById('craftResultArea').innerHTML = '';
+        renderCraftPicker();
+      });
+    });
+    return;
+  }
+
+  const group = CRAFT_GROUPS_DATA.find(function (g) { return g.group === selectedGroup; });
+  if (!group) return;
+  grid.innerHTML = group.variants.map(function (v) {
+    const name = v[lang];
+    return '<div class="craft-pick' + (selectedFamily === v.family ? ' active' : '') + '" data-family="' + v.family + '">' +
+      '<img src="' + itemIconUrl('T4_' + v.family, 1) + '" loading="lazy" onerror="this.style.display=\'none\'" alt="" />' +
+      '<span>' + name + '</span></div>';
+  }).join('');
+  grid.querySelectorAll('.craft-pick').forEach(function (el) {
+    el.addEventListener('click', function () { pickCraftFamily(this.dataset.family); });
+  });
+}
+
+function pickCraftFamily(family) {
+  selectedFamily = family;
+  renderCraftPicker();
+  const group = CRAFT_GROUPS_DATA.find(function (g) { return g.group === selectedGroup; });
+  const variant = group && group.variants.find(function (v) { return v.family === family; });
+  if (!variant) return;
+
+  const area = document.getElementById('craftResultArea');
+  const tiers = [];
+  for (let tt = variant.tierMin; tt <= variant.tierMax; tt++) tiers.push(tt);
+  const defaultTier = tiers.includes(4) ? 4 : tiers[0];
+
+  area.innerHTML = '<div class="craft-tier-row"><label style="color:var(--text-secondary); font-size:13px;">' + t('craftTier') + '</label>' +
+    '<select id="craftTierSelect">' + tiers.map(function (tt) { return '<option value="' + tt + '"' + (tt === defaultTier ? ' selected' : '') + '>T' + tt + '</option>'; }).join('') + '</select></div>' +
+    '<div id="craftCardArea"><p class="status">' + t('searching') + '</p></div>';
+
+  document.getElementById('craftTierSelect').addEventListener('change', function () {
+    loadCraftInfo(family, parseInt(this.value, 10));
+  });
+  loadCraftInfo(family, defaultTier);
+}
+
+async function loadCraftInfo(family, tier) {
+  const cardArea = document.getElementById('craftCardArea');
+  cardArea.innerHTML = '<p class="status">' + t('searching') + '</p>';
+  try {
+    const res = await fetch('/api/craft-info?family=' + encodeURIComponent(family) + '&tier=' + tier);
+    const data = await res.json();
+    if (data.status !== 'ok') { cardArea.innerHTML = '<p class="status">' + t('priceNoData') + '</p>'; return; }
+
+    const name = lang === 'pt' ? data.pt : data.en;
+    const resourceRows = data.resources.map(function (r) {
+      const rName = lang === 'pt' ? r.pt : r.en;
+      return '<div class="craft-resource-row"><img src="' + itemIconUrl(r.id, 1) + '" onerror="this.style.display=\'none\'" alt="" />' +
+        '<span>' + r.qty + '× ' + rName + '</span></div>';
+    }).join('');
+
+    cardArea.innerHTML = '<div class="craft-card">' +
+      '<div class="craft-card-header"><img src="' + itemIconUrl(data.itemId, 1) + '" onerror="this.style.display=\'none\'" alt="" />' +
+      '<div><h3>T' + tier + ' ' + name + '</h3><div class="sub">' + t('craftColCity') + ': ' + (data.city || t('noVolume')) + '</div></div></div>' +
+      '<div>' + resourceRows + '</div></div>';
+  } catch (e) {
+    cardArea.innerHTML = '<p class="status">' + t('backendError') + '</p>';
+  }
+}
+
 function renderCraftGuide() {
-  document.getElementById('craftIntro').textContent = t('craftIntro');
   document.getElementById('craftCityTitle').textContent = t('craftCityTitle');
-  document.getElementById('craftRecipesTitle').textContent = t('craftRecipesTitle');
+  document.getElementById('craftPickerTitle').textContent = t('craftPickerTitle');
 
   const cityRows = CITY_BONUSES.map(function (c) {
     return '<td>' + c.city + '</td><td>' + c.refine[lang] + '</td><td>' + c.gear[lang] + '</td>';
   });
   document.getElementById('craftCityArea').innerHTML = tabelaHtml([
-    { label: t('craftColCity') }, { label: t('craftColRefine') }, { label: t('craftColGear') }
+    { label: t('craftColCity') }, { label: t('craftColRefine') + ' (+15%)' }, { label: t('craftColGear') + ' (+15%)' }
   ], cityRows);
 
-  const recipeRows = CRAFT_RECIPES.map(function (r) {
-    const name = lang === 'pt' ? r.pt : r.en;
-    const resText = r.res.map(function (pair) {
-      return pair[1] + ' ' + RESOURCE_NAME[lang][pair[0]];
-    }).join(' + ');
-    return '<td class="icon-cell"><img src="' + itemIconUrl(r.id, 1) + '" loading="lazy" onerror="this.style.display=\'none\'" alt="" /></td>' +
-      '<td>T4 ' + name + '</td>' +
-      '<td>' + resText + '</td>' +
-      '<td>' + r.city + '</td>';
+  if (CRAFT_GROUPS_DATA.length === 0) {
+    loadCraftFamilies().then(renderCraftPicker);
+  } else {
+    renderCraftPicker();
+  }
+}
+
+function renderIslandsGuide() {
+  document.getElementById('islandsAboutTitle').textContent = t('islandsAboutTitle');
+  document.getElementById('farmCityTitle').textContent = t('farmCityTitle');
+  document.getElementById('islandCostTitle').textContent = t('islandCostTitle');
+  document.getElementById('islandsAboutArea').innerHTML = t('islandsAbout');
+
+  const farmRows = FARM_BONUSES.map(function (f) {
+    return '<td>' + f.city + '</td><td>' + textOf(f.crop) + '</td><td>' + textOf(f.herb) + '</td><td>' + textOf(f.animal) + '</td>';
   });
-  document.getElementById('craftRecipesArea').innerHTML = tabelaHtml([
-    { label: '' }, { label: t('craftColItem') }, { label: t('craftColResources') }, { label: t('craftColCity') }
-  ], recipeRows);
+  document.getElementById('farmCityArea').innerHTML = tabelaHtml([
+    { label: t('craftColCity') }, { label: t('farmColCrop') + ' (+10%)' }, { label: t('farmColHerb') + ' (+10%)' }, { label: t('farmColAnimal') + ' (+10%)' }
+  ], farmRows);
+
+  function costTable(rows) {
+    return tabelaHtml([
+      { label: t('islandColTier') }, { label: t('islandColCost'), num: true }, { label: t('islandColTotal'), num: true }
+    ], rows.map(function (r) { return '<td>T' + r[0] + '</td><td class="num">' + r[1].toLocaleString() + '</td><td class="num">' + r[2].toLocaleString() + '</td>'; }));
+  }
+
+  document.getElementById('islandCostArea').innerHTML =
+    '<div class="section-title" style="margin-top:0;">' + t('islandFirstPersonal') + '</div>' + costTable(ISLAND_COSTS.firstPersonal) +
+    '<div class="section-title">' + t('islandRegularPersonal') + '</div>' + costTable(ISLAND_COSTS.personal) +
+    '<div class="section-title">' + t('islandGuild') + '</div>' + costTable(ISLAND_COSTS.guild);
 }
 
 let lang = 'en';
@@ -425,9 +578,11 @@ function applyLanguage() {
   document.getElementById('tabExplorer').textContent = t('marketExplorer');
   document.getElementById('tabSearch').textContent = t('itemSearch');
   document.getElementById('tabCraft').textContent = t('craftingGuide');
+  document.getElementById('tabIslands').textContent = t('islandsTab');
   document.getElementById('lblCategory').textContent = t('category');
   document.getElementById('lblEnchant').textContent = t('enchant');
   document.getElementById('lblQuality').textContent = t('quality');
+  document.getElementById('lblNats').textContent = t('natsLabel');
   document.getElementById('lblBuyCity').textContent = t('buyCity');
   document.getElementById('lblSellCities').textContent = t('sellCities');
   document.getElementById('lblSort').textContent = t('sort');
@@ -441,6 +596,7 @@ function applyLanguage() {
   if (lastCategoryCounts) buildCategoryCheckboxes(lastCategoryCounts);
   if (lastOpportunities.length) renderTable(lastOpportunities);
   if (document.getElementById('viewCraft').style.display !== 'none') renderCraftGuide();
+  if (document.getElementById('viewIslands').style.display !== 'none') renderIslandsGuide();
 }
 
 document.getElementById('idioma').addEventListener('change', function () { lang = this.value; applyLanguage(); });
@@ -450,31 +606,25 @@ document.getElementById('regiao').addEventListener('change', function () {
   pollNatsStatus();
 });
 
-document.getElementById('tabExplorer').addEventListener('click', function () {
-  document.getElementById('tabExplorer').classList.add('active');
-  document.getElementById('tabSearch').classList.remove('active');
-  document.getElementById('tabCraft').classList.remove('active');
-  document.getElementById('viewExplorer').style.display = 'grid';
-  document.getElementById('viewSearch').style.display = 'none';
-  document.getElementById('viewCraft').style.display = 'none';
-});
-document.getElementById('tabSearch').addEventListener('click', function () {
-  document.getElementById('tabSearch').classList.add('active');
-  document.getElementById('tabExplorer').classList.remove('active');
-  document.getElementById('tabCraft').classList.remove('active');
-  document.getElementById('viewSearch').style.display = 'block';
-  document.getElementById('viewExplorer').style.display = 'none';
-  document.getElementById('viewCraft').style.display = 'none';
-});
-document.getElementById('tabCraft').addEventListener('click', function () {
-  document.getElementById('tabCraft').classList.add('active');
-  document.getElementById('tabExplorer').classList.remove('active');
-  document.getElementById('tabSearch').classList.remove('active');
-  document.getElementById('viewCraft').style.display = 'block';
-  document.getElementById('viewExplorer').style.display = 'none';
-  document.getElementById('viewSearch').style.display = 'none';
-  renderCraftGuide();
-});
+const TABS = [
+  { tab: 'tabExplorer', view: 'viewExplorer', display: 'grid' },
+  { tab: 'tabSearch', view: 'viewSearch', display: 'block' },
+  { tab: 'tabCraft', view: 'viewCraft', display: 'block' },
+  { tab: 'tabIslands', view: 'viewIslands', display: 'block' }
+];
+
+function switchTab(activeTab) {
+  TABS.forEach(function (entry) {
+    const isActive = entry.tab === activeTab;
+    document.getElementById(entry.tab).classList.toggle('active', isActive);
+    document.getElementById(entry.view).style.display = isActive ? entry.display : 'none';
+  });
+}
+
+document.getElementById('tabExplorer').addEventListener('click', function () { switchTab('tabExplorer'); });
+document.getElementById('tabSearch').addEventListener('click', function () { switchTab('tabSearch'); });
+document.getElementById('tabCraft').addEventListener('click', function () { switchTab('tabCraft'); renderCraftGuide(); });
+document.getElementById('tabIslands').addEventListener('click', function () { switchTab('tabIslands'); renderIslandsGuide(); });
 
 async function pollNatsStatus() {
   const el = document.getElementById('natsIndicator');
@@ -525,7 +675,10 @@ function formatDate(isoStr) {
   if (!isoStr) return '';
   const d = new Date(isoStr);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(lang === 'pt' ? 'pt-BR' : 'en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(lang === 'pt' ? 'pt-BR' : 'en-US', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+    hour12: false, timeZone: 'America/Sao_Paulo'
+  }) + ' (UTC-3)';
 }
 
 function renderTable(opps) {
@@ -580,7 +733,7 @@ document.getElementById('goBtn').addEventListener('click', async function () {
     categories: catAllChecked ? 'ALL' : categories.join(','),
     enchanted: includeEnchanted, qualities: includeQualities,
     buyCity: cidadeCompra, sellCities: sellAllChecked ? 'ALL' : sellCities.join(','),
-    region: region
+    region: region, liveNats: document.getElementById('usarNats').checked
   });
   const endpoint = '/api/opportunities';
 
@@ -678,11 +831,13 @@ async function renderItemSearchResult() {
         .sort(function (a, b) { return a.city.localeCompare(b.city) || a.quality - b.quality; })
         .map(function (p) {
           const qualLabel = QUALITY_LABELS[lang][p.quality] || p.quality;
+          const isBlackMarket = p.city === 'Black Market';
           const buyDate = formatDate(p.sell_price_min_date);
           const sellDate = formatDate(p.buy_price_max_date);
-          return '<td>' + p.city + '</td>' +
+          const buyCell = isBlackMarket ? '—' : (p.sell_price_min ? p.sell_price_min.toLocaleString() : '—') + (buyDate ? '<br><span style="color:var(--text-secondary); font-size:11px;">' + buyDate + '</span>' : '');
+          return '<td>' + p.city + (isBlackMarket ? ' <span style="color:var(--text-secondary); font-size:11px;">(' + t('buyOnly') + ')</span>' : '') + '</td>' +
             '<td>' + qualLabel + '</td>' +
-            '<td class="num">' + (p.sell_price_min ? p.sell_price_min.toLocaleString() : '—') + (buyDate ? '<br><span style="color:var(--text-secondary); font-size:11px;">' + buyDate + '</span>' : '') + '</td>' +
+            '<td class="num">' + buyCell + '</td>' +
             '<td class="num">' + (p.buy_price_max ? p.buy_price_max.toLocaleString() : '—') + (sellDate ? '<br><span style="color:var(--text-secondary); font-size:11px;">' + sellDate + '</span>' : '') + '</td>';
         });
       priceHtml = tabelaHtml([
